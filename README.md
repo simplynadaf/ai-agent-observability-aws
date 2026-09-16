@@ -1,5 +1,9 @@
 # Catch the Silent Waste: AI Agent Observability on AWS (Bedrock + Strands + Traccia)
 
+> **Live demo (replay):** https://simplynadaf.github.io/ai-agent-observability-aws/
+> A static, backend-free replay of a real run - agents light up, wires pulse, and the
+> real report reveals. LIVE mode (real Bedrock + AWS reads) runs locally, see below.
+
 Your multi-agent crew returned a **perfect answer** - and quietly cost **1.5x** what it
 should have. Your APM dashboard says `200 OK`. The **trace** is the only place that extra
 money is visible.
