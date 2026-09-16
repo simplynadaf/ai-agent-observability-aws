@@ -1,0 +1,5 @@
+# Extra deps for the live control-panel UI only (ui/app.py). The core crew (crew.py)
+# does NOT need these - it runs from requirements.txt at $0/local as before. Kept
+# separate so the article's runtime deps stay minimal.
+fastapi
+uvicorn[standard]

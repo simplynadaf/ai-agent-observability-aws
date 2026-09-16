@@ -1,0 +1,5 @@
+# Runtime
+strands-agents[otel]
+strands-agents-tools
+traccia
+boto3

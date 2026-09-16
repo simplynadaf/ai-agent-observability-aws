@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Traccia trace output (regenerated on each run)
+traces.jsonl
+traces_*.jsonl
+
+# The replay sample trace IS required for the UI demo - keep it tracked.
+!ui/replay/sample_run.jsonl
+
+# Local logs
+*.log
+
+# Secrets - never commit
+.env
+
