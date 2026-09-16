@@ -174,10 +174,13 @@ def month_to_date_cost(region: str = REGION) -> dict:
 
 @tool
 def cost_forecast(region: str = REGION) -> dict:
-    """Forecasted month-end cost (USD), overall and for the top 5 services. READ-ONLY.
+    """Actual month-to-date cost and Cost Explorer's month-end forecast. READ-ONLY.
 
-    Combines actual month-to-date spend with Cost Explorer's forecast for the rest of
-    the month, so the numbers line up with the AWS console's "Forecasted month end".
+    Mirrors the AWS console's cost overview: an actual month-to-date figure, a single
+    Cost Explorer month-end forecast for the whole account, and the top services by
+    ACTUAL spend so far. We deliberately do NOT forecast per service: Cost Explorer only
+    forecasts the account total, and pro-rating a per-service guess next to the real
+    account forecast is misleading (the parts would not reconcile with the whole).
 
     Cost Explorer is global; the CE client always uses us-east-1 regardless of `region`.
 
@@ -187,11 +190,9 @@ def cost_forecast(region: str = REGION) -> dict:
     Returns:
         A dict with:
           - month_to_date_total: actual MTD unblended cost so far (USD)
-          - forecast_month_end_total: forecasted total for the whole month (USD)
-          - top_services: list of the top 5 services by MTD spend, each with
-            {service, month_to_date, forecast_month_end}. Per-service forecast is the
-            service's MTD scaled to the full month (CE only forecasts the account total,
-            not per service), and is labelled as an estimate.
+          - forecast_month_end_total: Cost Explorer's forecast for the whole month (USD)
+          - top_services: top 5 services by ACTUAL month-to-date spend, each
+            {service, month_to_date}. Actuals only - no per-service forecast.
     """
     with _timed_tool("cost_forecast"):
         ce = boto3.client("ce", region_name="us-east-1")
@@ -233,17 +234,10 @@ def cost_forecast(region: str = REGION) -> dict:
                 # report the MTD total as the floor rather than inventing a number.
                 forecast_total = mtd_total
 
-        # 3) top 5 services by MTD spend, with a simple pro-rated month-end estimate
-        days_elapsed = (today - first).days + 1
-        days_in_month = (next_month - first).days
-        scale = days_in_month / days_elapsed if days_elapsed else 1.0
+        # 3) top 5 services by ACTUAL MTD spend (no per-service forecast - see docstring)
         top = sorted(by_service.items(), key=lambda kv: kv[1], reverse=True)[:5]
         top_services = [
-            {
-                "service": name,
-                "month_to_date": round(amt, 2),
-                "forecast_month_end": round(amt * scale, 2),  # pro-rated estimate
-            }
+            {"service": name, "month_to_date": round(amt, 2)}
             for name, amt in top
         ]
 
