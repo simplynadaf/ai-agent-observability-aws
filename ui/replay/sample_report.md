@@ -2,54 +2,54 @@ Here's the report based on the gathered information:
 
 ### Health Section
 **Running EC2 Instances:**
-- Instance ID: `i-019264cdc1b1eee07`, Type: `t3.2xlarge`, CPU Utilization: `1.82%`
+- Instance ID: `i-0a1b2c3d4e5f60718`, Type: `t3.2xlarge`, CPU Utilization: `1.82%`
 
 **EBS Volumes:**
-- Volume ID: `vol-02b2d72609cf79295`, Size: `150 GiB`, Type: `gp2`, State: `in-use`
-- Volume ID: `vol-00e39dd788a06ad4b`, Size: `50 GiB`, Type: `gp3`, State: `in-use`
+- Volume ID: `vol-0aa11bb22cc33dd44`, Size: `150 GiB`, Type: `gp2`, State: `in-use`
+- Volume ID: `vol-0ee55ff66aa77bb88`, Size: `50 GiB`, Type: `gp3`, State: `in-use`
 
 **Lambda Functions:**
-- Name: `bedrock-cost-agent`, Runtime: `python3.12`
-- Name: `genai-image-titan`, Runtime: `python3.13`
-- Name: `Demo`, Runtime: `python3.10`
-- Name: `terraform-lambda-hello`, Runtime: `python3.11`
-- Name: `Bedrock-OCR`, Runtime: `python3.14`
-- Name: `Demo-API`, Runtime: `python3.14`
-- Name: `terraform-lambda-s3-processor`, Runtime: `python3.11`
-- Name: `genai-image-generator`, Runtime: `python3.13`
+- Name: `orders-api`, Runtime: `python3.12`
+- Name: `image-thumbnailer`, Runtime: `python3.13`
+- Name: `demo-handler`, Runtime: `python3.10`
+- Name: `hello-world`, Runtime: `python3.11`
+- Name: `invoice-ocr`, Runtime: `python3.14`
+- Name: `public-api`, Runtime: `python3.14`
+- Name: `s3-processor`, Runtime: `python3.11`
+- Name: `image-generator`, Runtime: `python3.13`
 
 **S3 Buckets:**
-- `dev.sarvarnadaf.com`
-- `dev.to-articles`
-- `devops-mustkhim`
-- `devops-sarvar`
-- `devto-article-promotion`
-- `infinite-gallery-site-175662053988`
-- `sarvarnadaf.com`
-- `sarvars-youtube-videos`
+- `example-app-assets`
+- `example-articles`
+- `example-devops-a`
+- `example-devops-b`
+- `example-promotion`
+- `example-gallery-site-000011112222`
+- `example-static-site`
+- `example-media-videos`
 
 There are no unattached (available) EBS volumes in the `us-east-1` region.
 
 ### Security Section
 1. **Security Groups Open to the Whole Internet**:
    - Security groups open to the whole internet (0.0.0.0/0) with the following open ports:
-     - `sg-055250cbcc6f3b37b` with port `22`
-     - `sg-de63a5eb` with ports `-1` and `22`
-     - `sg-03f6adb963161c919` with port `3389`
+     - `sg-0a1b2c3d4e5f60718` with port `22`
+     - `sg-0c1d2e3f` with ports `-1` and `22`
+     - `sg-0f1e2d3c4b5a69780` with port `3389`
    - Risk: These security groups allow inbound traffic from any IP address, which can expose the associated resources to potential attacks. Port `22` is commonly used for SSH, and port `3389` is used for RDP, both of which are high-risk if exposed to the internet.
 
 2. **MFA Gaps**:
    - The root account has MFA enabled. However, the following IAM users lack MFA:
-     - `arman-nadaf`
-     - `ep2-n8n-bedrock-demo`
-     - `github-action`
-     - `naisha`
-     - `nightshift-test-user`
-     - `Pratik`
-     - `salman`
-     - `sarvar-s`
-     - `server`
-     - `Terraform`
+     - `alice`
+     - `bob`
+     - `ci-deployer`
+     - `carol`
+     - `test-user`
+     - `dave`
+     - `erin`
+     - `frank`
+     - `service-account`
+     - `terraform`
    - Risk: IAM users without MFA are more susceptible to unauthorized access, as they rely solely on passwords for authentication.
 
 3. **S3 Buckets Not Fully Protected by a Public Access Block**:

@@ -3,11 +3,16 @@ instrumented with Traccia for per-agent identity, cost, and token attribution.
 
 Topology (Strands "agents-as-tools"), each sub-agent a distinct named agent:
     supervisor (investigation_run)               agent: "AWS Account Investigator"
-      |-- cost_analyst   -> month_to_date_cost   agent: "Cost Analyst"     (Cost Explorer)
+      |-- cost_analyst   -> cost_forecast,        agent: "Cost Analyst"     (Cost Explorer)
+      |                     last_month_cost,
+      |                     daily_cost_trend
       |-- health_ops     -> instances, cpu,       agent: "Health & Ops"     (EC2/CW/EBS/
       |                     volumes, functions,                              Lambda/S3)
       |                     buckets
-      |-- security_ops   -> open_security_groups  agent: "Security Auditor" (EC2 SG reads)
+      |-- security_ops   -> open_security_groups, agent: "Security Auditor" (EC2 SG, IAM,
+      |                     mfa_findings,                                     S3, GuardDuty)
+      |                     public_s3_buckets,
+      |                     guardduty_enabled
 
 WHY distinct per-agent identity works in ONE process (verified from the Traccia SDK
 source, processors/agent_enricher.py): AgentEnrichmentProcessor resolves identity with
@@ -44,6 +49,24 @@ from strands.models import BedrockModel
 from traccia import init, observe, get_current_span, span_scope, force_flush
 
 import tools as T
+
+# Load .env into os.environ NOW, at import time, BEFORE we read TRACCIA_API_KEY below.
+# Gotcha (this cost real dashboard-is-empty confusion): traccia.init(load_env=True) does
+# load .env, but it does so INSIDE init() - which runs AFTER the module-level
+# `_HAS_KEY = bool(os.getenv("TRACCIA_API_KEY"))` line further down. So without this
+# pre-load, _HAS_KEY was computed from an empty process env, use_otlp came out False, and
+# the crew silently ran "$0 local" mode and never pushed traces to app.traccia.ai even
+# with a valid key sitting in .env. Loading here fixes the ordering.
+try:
+    from traccia.config import load_dotenv as _traccia_load_dotenv
+    _traccia_load_dotenv(os.path.join(os.getcwd(), ".env"))
+except Exception:
+    # Fall back to python-dotenv, then to a no-op; init(load_env=True) is still a backstop.
+    try:
+        from dotenv import load_dotenv as _dotenv_load
+        _dotenv_load(os.path.join(os.getcwd(), ".env"), override=False)
+    except Exception:
+        pass
 
 # Holds the supervisor's span so sub-agent tools (run inside Strands' event loop,
 # on a detached context) can parent their spans to it explicitly. Relying on
@@ -125,8 +148,9 @@ AGENTS = {
 
 # If a Traccia API key is present (.env -> TRACCIA_API_KEY), export to the Traccia
 # platform so the trace tree + per-agent cost show up in app.traccia.ai. With no key,
-# everything still runs at $0 to the local traces.jsonl file only.
-_HAS_KEY = bool(os.getenv("TRACCIA_API_KEY"))
+# everything still runs at $0 to the local traces.jsonl file only. .strip() so a blank
+# or whitespace-only value counts as "no key" rather than a truthy empty string.
+_HAS_KEY = bool((os.getenv("TRACCIA_API_KEY") or "").strip())
 
 # Production-style deployment identity. These are things you CONFIGURE (not measure), so
 # setting them is honest: they make the traces read like a real multi-tenant deployment
@@ -310,15 +334,21 @@ def cost_analyst(question: str) -> str:
     """Analyze AWS spend by service (READ-ONLY). Delegated sub-agent."""
     return _run_subagent(
         "cost_analyst", question,
-        tools_list=[T.month_to_date_cost, T.cost_forecast],
+        tools_list=[T.cost_forecast, T.last_month_cost, T.daily_cost_trend],
         system_prompt=(
-            "You are a READ-ONLY AWS cost analyst. Call cost_forecast to get the actual "
-            "month-to-date total, Cost Explorer's forecasted month-end total, and the "
-            "top 5 services by actual month-to-date spend. Report: (1) actual "
-            "month-to-date total, (2) forecasted month-end total, and (3) the top 5 "
-            "services with their actual spend. Do NOT invent a per-service forecast; "
-            "only the account-level month-end forecast is available. Never suggest or "
-            "make changes."
+            "You are a READ-ONLY AWS FinOps cost analyst. Use ALL of your tools to build "
+            "a complete spend picture, then report:\n"
+            "1. cost_forecast -> the actual month-to-date total, Cost Explorer's "
+            "forecasted month-end total, and the top 5 services by actual month-to-date "
+            "spend.\n"
+            "2. last_month_cost -> last full month's total, and compute the "
+            "month-over-month change (this month-to-date vs last month) as a direction "
+            "and rough percentage.\n"
+            "3. daily_cost_trend -> call out the single most expensive day this month and "
+            "whether it stands out against the average daily spend (a possible spike).\n"
+            "Do NOT invent a per-service forecast; only the account-level month-end "
+            "forecast is available. Report only real numbers the tools return. Never "
+            "suggest or make changes."
         ),
     )
 

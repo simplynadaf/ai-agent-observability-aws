@@ -249,6 +249,102 @@ def cost_forecast(region: str = REGION) -> dict:
 
 
 @tool
+def last_month_cost(region: str = REGION) -> dict:
+    """Previous full calendar month's cost by service, for month-over-month change. READ-ONLY.
+
+    Reads Cost Explorer for the last COMPLETE month (first day of last month up to,
+    but not including, the first day of this month). Pair this with the current
+    month-to-date total to spot a month-over-month trend: is spend rising or falling,
+    and which services drove the change.
+
+    Cost Explorer is global; the CE client always uses us-east-1 regardless of `region`.
+
+    Args:
+        region: Accepted for signature consistency; CE always queries globally.
+
+    Returns:
+        A dict with:
+          - period: {start, end} of the full month measured (end is exclusive)
+          - last_month_total: last month's total unblended cost (USD)
+          - top_services: top 5 services by last-month spend, each {service, cost}
+    """
+    with _timed_tool("last_month_cost"):
+        ce = boto3.client("ce", region_name="us-east-1")
+        today = dt.date.today()
+        first_this = today.replace(day=1)
+        first_last = (first_this - dt.timedelta(days=1)).replace(day=1)
+        r = ce.get_cost_and_usage(
+            TimePeriod={"Start": first_last.isoformat(), "End": first_this.isoformat()},
+            Granularity="MONTHLY",
+            Metrics=["UnblendedCost"],
+            GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}],
+        )
+        by_service = {
+            g["Keys"][0]: round(float(g["Metrics"]["UnblendedCost"]["Amount"]), 6)
+            for g in r["ResultsByTime"][0]["Groups"]
+        }
+        last_total = round(sum(by_service.values()), 2)
+        top = sorted(by_service.items(), key=lambda kv: kv[1], reverse=True)[:5]
+        return {
+            "period": {"start": first_last.isoformat(), "end": first_this.isoformat()},
+            "last_month_total": last_total,
+            "top_services": [
+                {"service": name, "cost": round(amt, 2)} for name, amt in top
+            ],
+        }
+
+
+@tool
+def daily_cost_trend(region: str = REGION) -> dict:
+    """Daily unblended cost for the current month, to surface spikes. READ-ONLY.
+
+    Reads Cost Explorer at DAILY granularity from the first of the month through today.
+    A single day that costs far more than the daily average is exactly the kind of
+    silent spike a monthly total hides, so this tool reports the per-day series plus
+    the highest-cost day.
+
+    Cost Explorer is global; the CE client always uses us-east-1 regardless of `region`.
+
+    Args:
+        region: Accepted for signature consistency; CE always queries globally.
+
+    Returns:
+        A dict with:
+          - days: list of {date, cost} for each day so far this month
+          - average_daily: mean daily cost over the period (USD)
+          - peak_day: {date, cost} of the most expensive day (USD)
+    """
+    with _timed_tool("daily_cost_trend"):
+        ce = boto3.client("ce", region_name="us-east-1")
+        today = dt.date.today()
+        first = today.replace(day=1)
+        tomorrow = today + dt.timedelta(days=1)
+        r = ce.get_cost_and_usage(
+            TimePeriod={"Start": first.isoformat(), "End": tomorrow.isoformat()},
+            Granularity="DAILY",
+            Metrics=["UnblendedCost"],
+        )
+        days = [
+            {
+                "date": d["TimePeriod"]["Start"],
+                "cost": round(float(d["Total"]["UnblendedCost"]["Amount"]), 4),
+            }
+            for d in r["ResultsByTime"]
+        ]
+        # clamp tiny negative rounding/credits to 0 for an honest, readable series
+        for d in days:
+            if d["cost"] < 0:
+                d["cost"] = 0.0
+        avg = round(sum(d["cost"] for d in days) / len(days), 4) if days else 0.0
+        peak = max(days, key=lambda d: d["cost"]) if days else {"date": None, "cost": 0.0}
+        return {
+            "days": days,
+            "average_daily": avg,
+            "peak_day": {"date": peak["date"], "cost": round(peak["cost"], 4)},
+        }
+
+
+@tool
 def list_buckets() -> list[str]:
     """List S3 bucket names in the account. READ-ONLY.
 
