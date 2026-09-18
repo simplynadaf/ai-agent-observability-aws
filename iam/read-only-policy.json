@@ -1,0 +1,34 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadOnlyAccountReads",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeVolumes",
+        "ec2:DescribeSecurityGroups",
+        "cloudwatch:GetMetricStatistics",
+        "ce:GetCostAndUsage",
+        "ce:GetCostForecast",
+        "s3:ListAllMyBuckets",
+        "s3:GetBucketPublicAccessBlock",
+        "lambda:ListFunctions",
+        "iam:GetAccountSummary",
+        "iam:ListUsers",
+        "iam:ListMFADevices",
+        "guardduty:ListDetectors"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "InvokeNovaProOnly",
+      "Effect": "Allow",
+      "Action": "bedrock:InvokeModel",
+      "Resource": [
+        "arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0",
+        "arn:aws:bedrock:*:*:inference-profile/us.amazon.nova-pro-v1:0"
+      ]
+    }
+  ]
+}

@@ -234,8 +234,8 @@ python compare.py traces_clean.jsonl traces_bloat.jsonl   # the side-by-side "di
 ## 📋 Prerequisites
 
 - ✅ **Python 3.10+**
-- ✅ **AWS credentials** with the read-only actions in the [IAM policy](#-least-privilege-iam-policy) (or the managed `SecurityAudit` + `ViewOnlyAccess`)
-- ✅ **Amazon Nova Pro enabled** in Bedrock, `us-east-1` (`amazon.nova-pro-v1:0`)
+- ✅ **AWS credentials** with the read-only actions in the [IAM policy](#-least-privilege-iam-policy) plus `bedrock:InvokeModel` for Nova Pro (the repo ships the ready-to-use policy at `iam/read-only-policy.json`)
+- ✅ **Amazon Nova Pro** (1) enabled in the Bedrock console under *Model access* (`us-east-1`, `amazon.nova-pro-v1:0`) and (2) invokable via `bedrock:InvokeModel` in your policy
 - ✅ *(Optional)* a Traccia API key for the hosted dashboard. Leave it unset for the `$0` local path
 
 ---
@@ -317,6 +317,8 @@ ai-agent-observability-aws/
 ├── probe_doublecount.py          # proves supervisor usage excludes sub-agent tokens
 ├── agent_config.json             # ownership catalog (owner / team / org) → dashboard
 ├── build_pages.py                # builds the static docs/ Pages replay from a recorded run
+├── iam/
+│   └── read-only-policy.json     # ready-to-use least-privilege policy (reads + Nova Pro invoke)
 ├── ui/                           # FastAPI live control panel (LIVE + REPLAY)
 │   ├── app.py                    # /stream SSE backend
 │   ├── index.html                # the animated crew graph
@@ -356,34 +358,65 @@ crew total = supervisor + sum(sub-agents)     # no subtraction, no overlap
 
 ## 🔐 Least-Privilege IAM Policy
 
-Every action is a `Describe`, `Get`, or `List`. Nothing creates, modifies, or deletes:
+Every account read is a `Describe`, `Get`, or `List`, and the only non-read action is
+`bedrock:InvokeModel` scoped to Nova Pro (the agent has to call the model). Nothing
+creates, modifies, or deletes any account resource. The full policy ships in the repo at
+[`iam/read-only-policy.json`](iam/read-only-policy.json):
 
 ```json
 {
   "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": [
-      "ec2:DescribeInstances",
-      "ec2:DescribeVolumes",
-      "ec2:DescribeSecurityGroups",
-      "cloudwatch:GetMetricStatistics",
-      "ce:GetCostAndUsage",
-      "ce:GetCostForecast",
-      "s3:ListAllMyBuckets",
-      "s3:GetBucketPublicAccessBlock",
-      "lambda:ListFunctions",
-      "iam:GetAccountSummary",
-      "iam:ListUsers",
-      "iam:ListMFADevices",
-      "guardduty:ListDetectors"
-    ],
-    "Resource": "*"
-  }]
+  "Statement": [
+    {
+      "Sid": "ReadOnlyAccountReads",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeVolumes",
+        "ec2:DescribeSecurityGroups",
+        "cloudwatch:GetMetricStatistics",
+        "ce:GetCostAndUsage",
+        "ce:GetCostForecast",
+        "s3:ListAllMyBuckets",
+        "s3:GetBucketPublicAccessBlock",
+        "lambda:ListFunctions",
+        "iam:GetAccountSummary",
+        "iam:ListUsers",
+        "iam:ListMFADevices",
+        "guardduty:ListDetectors"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "InvokeNovaProOnly",
+      "Effect": "Allow",
+      "Action": "bedrock:InvokeModel",
+      "Resource": [
+        "arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0",
+        "arn:aws:bedrock:*:*:inference-profile/us.amazon.nova-pro-v1:0"
+      ]
+    }
+  ]
 }
 ```
 
-> 💡 AWS's managed `SecurityAudit` and `ViewOnlyAccess` policies also cover this set if you would rather not hand-roll one.
+Create it in one command (run with your own admin credentials, one time):
+
+```bash
+aws iam create-policy \
+  --policy-name AgentObservabilityReadOnly \
+  --policy-document file://iam/read-only-policy.json
+```
+
+Then attach it to the user or role that runs the crew. If you would rather not manage a
+custom policy, AWS's managed `SecurityAudit` + `ViewOnlyAccess` cover the account reads,
+but you still need `bedrock:InvokeModel` for Nova Pro (the two managed policies do not
+grant it), so add the `InvokeNovaProOnly` statement above on top of them.
+
+> ⚠️ **Nova Pro is two separate things.** (1) **Model access:** enable `amazon.nova-pro-v1:0`
+> once in the Bedrock console under *Model access* (`us-east-1`) - this is a Bedrock grant,
+> not an IAM permission, so no policy can do it for you. (2) **Invoke permission:** the
+> `bedrock:InvokeModel` statement above lets the agent call it. You need both.
 
 ---
 
