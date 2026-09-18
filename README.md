@@ -142,6 +142,13 @@ Every agent's tools show up as their own spans on the Execution Timeline, each w
 
 ## 🧠 How It Works
 
+<div align="center">
+<img src="docs/architecture.png" alt="Architecture: a user query enters the AWS Account Investigator supervisor, which delegates to Cost Analyst, Health and Ops, and Security Auditor; each specialist calls Amazon Nova Pro and read-only AWS APIs, and Traccia captures every step as a span exported to a local file or the hosted dashboard" width="100%"/>
+</div>
+
+<details>
+<summary><b>Text version of the diagram</b></summary>
+
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                                                                                │
@@ -162,6 +169,8 @@ Every agent's tools show up as their own spans on the Execution Timeline, each w
 │                        (Describe / Get / List - never create/modify/delete)  │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
+
+</details>
 
 **Traccia watches the AGENT, not your AWS account.** AWS is just the agent's subject matter. That is why the observability story is stack-agnostic: the same trace structure carries agent-specific attributes (cycle count, tokens, cost, owning agent) that classic APM never needed.
 
@@ -267,7 +276,7 @@ Same crew, same query, same read-only AWS, different bill. Every item is real, m
 |------|-------------------|-------------------|
 | Final answer | Correct | Correct |
 | Crew total cost | **$0.008131** | **$0.012366** |
-| Delta |, | **+$0.004235 (1.5x)** |
+| Delta | (baseline) | **+$0.004235 (1.5x)** |
 | APM status | `200 OK` | `200 OK` |
 | Where it shows | nowhere in APM | only in the **trace**, on per-agent cost |
 
@@ -311,7 +320,9 @@ ai-agent-observability-aws/
 │   ├── app.py                    # /stream SSE backend
 │   ├── index.html                # the animated crew graph
 │   └── replay/                   # deterministic saved run (free rehearsals)
-└── docs/                         # static GitHub Pages replay build
+└── docs/                         # GitHub Pages replay build + README assets
+    ├── architecture.png          # the How It Works diagram
+    └── screenshots/              # real per-agent Traccia trace captures
 ```
 
 ---
