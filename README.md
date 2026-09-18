@@ -77,6 +77,7 @@ That is the part nobody shows you. Nested traces and per-agent cost are table st
 ### 🧭 Supervisor
 **AWS Account Investigator**
 - Plans + delegates, then synthesizes one report
+- **Intent-routed:** a cost-only question runs *only* the Cost Analyst; the whole-account question runs all three
 - Stamps `agent.delegated_to` + shared `session.id`
 - **0** direct AWS calls (delegates only)
 
