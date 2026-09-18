@@ -6,8 +6,8 @@ This is the on-camera payoff view. It shows, for a real multi-agent run:
   - a per-tool table (call counts + time), and
   - the crew cost total.
 
-Usage:
-    python view_trace.py [traces.jsonl]
+Usage (run from the repo root):
+    python -m src.view_trace [traces.jsonl]
 """
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def main() -> None:
     path = sys.argv[1] if len(sys.argv) > 1 else "traces.jsonl"
     spans = load_spans(path)
     if not spans:
-        print(f"No spans found in {path}. Run `python crew.py` first.")
+        print(f"No spans found in {path}. Run `python -m src.crew` first.")
         return
 
     by_id = {s["spanId"]: s for s in spans}

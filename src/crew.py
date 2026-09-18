@@ -48,7 +48,7 @@ from strands import Agent, tool
 from strands.models import BedrockModel
 from traccia import init, observe, get_current_span, span_scope, force_flush
 
-import tools as T
+from . import tools as T
 
 # Load .env into os.environ NOW, at import time, BEFORE we read TRACCIA_API_KEY below.
 # Gotcha (this cost real dashboard-is-empty confusion): traccia.init(load_env=True) does

@@ -12,7 +12,7 @@ lifecycle over Server-Sent Events (SSE). Two modes:
     cost, identical every time - safe for rehearsals and retakes.
 
 The crew is imported unchanged; the only integration point is crew.set_event_callback,
-which is a no-op when not set (so `python crew.py` in the terminal is byte-for-byte the
+which is a no-op when not set (so `python -m src.crew` in the terminal is byte-for-byte the
 same $0/local path). This backend runs locally (localhost:8000) on the machine you're
 already using; it is not a hosted service and exposes nothing to the internet.
 """
@@ -59,7 +59,7 @@ def _live_events(query: str):
     crew.set_event_callback pushes events onto a thread-safe queue; this generator
     drains the queue and formats SSE frames until the run completes.
     """
-    import crew  # imported here so import cost is paid on first request, not at boot
+    from src import crew  # imported here so import cost is paid on first request, not at boot
 
     q: "queue.Queue[tuple[str, dict]]" = queue.Queue()
 

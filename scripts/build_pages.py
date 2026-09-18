@@ -13,7 +13,7 @@ from __future__ import annotations
 import json, re, sys
 from pathlib import Path
 
-HERE = Path(__file__).parent
+HERE = Path(__file__).resolve().parent.parent  # repo root (this script lives in scripts/)
 UI = HERE / "ui"
 DOCS = HERE / "docs"
 DOCS.mkdir(exist_ok=True)

@@ -178,7 +178,7 @@ Every agent's tools show up as their own spans on the Execution Timeline, each w
 
 ## 🔥 The Three Silent-Waste Scenarios
 
-`waste_demo.py` reproduces three patterns deterministically and catches each with a real Strands metric that the Traccia bridge stamps on the span. Detection is **delta-vs-baseline** (how real regression detection works), not brittle magic-number thresholds.
+`src/waste_demo.py` reproduces three patterns deterministically and catches each with a real Strands metric that the Traccia bridge stamps on the span. Detection is **delta-vs-baseline** (how real regression detection works), not brittle magic-number thresholds.
 
 <table>
 <tr>
@@ -210,8 +210,8 @@ One agent drags far more context than needed, and it compounds into the supervis
 </table>
 
 ```bash
-python waste_demo.py                       # clean baseline + all 3 waste runs + verdict
-python compare.py traces_clean.jsonl traces_bloat.jsonl   # the side-by-side "different bill" view
+python -m src.waste_demo                              # clean baseline + all 3 waste runs + verdict
+python -m src.compare traces_clean.jsonl traces_bloat.jsonl   # the side-by-side "different bill" view
 ```
 
 > Every number is **real Nova Pro token usage** and varies run to run. The lesson is the **relationship** (1.5x), not the absolute figure.
@@ -276,15 +276,18 @@ aws iam create-policy \
 
 ### Step 3: Run the crew against real AWS
 
+Run everything from the repository root (the crew is a `src/` package, so it is invoked
+with `python -m`, and `agent_config.json` / `traces.jsonl` resolve at the root):
+
 ```bash
-python crew.py            # runs the crew, writes traces.jsonl  (local, $0 to Traccia)
-python view_trace.py      # renders the nested tree + per-agent cost table
+python -m src.crew       # runs the crew, writes traces.jsonl  (local, $0 to Traccia)
+python -m src.view_trace # renders the nested tree + per-agent cost table
 ```
 
 ### Step 4: Watch the silent waste
 
 ```bash
-python waste_demo.py      # clean baseline + 3 waste scenarios + delta verdict
+python -m src.waste_demo # clean baseline + 3 waste scenarios + delta verdict
 ```
 
 > 💡 No Traccia account needed. With no `TRACCIA_API_KEY`, traces write to a local file. Set the key and the **same spans** push to [app.traccia.ai](https://app.traccia.ai).
@@ -330,16 +333,19 @@ Same crew, same query, same read-only AWS, different bill. Every item is real, m
 ai-agent-observability-aws/
 ├── README.md
 ├── LICENSE                       # Apache-2.0
-├── requirements.txt
-├── crew.py                       # supervisor + 3 sub-agents, Traccia init, cost bridge
-├── tools.py                      # read-only AWS tools (all describe/get/list)
-├── waste_demo.py                 # clean baseline + 3 engineered silent-waste scenarios
-├── compare.py                    # side-by-side "same answer, different bill" view
-├── view_trace.py                 # nested trace tree + per-agent cost table
-├── probe_multiagent.py           # token usage at every level
-├── probe_doublecount.py          # proves supervisor usage excludes sub-agent tokens
+├── requirements.txt              # pinned, tested versions
 ├── agent_config.json             # ownership catalog (owner / team / org) → dashboard
-├── build_pages.py                # builds the static docs/ Pages replay from a recorded run
+├── src/                          # the crew package (run with `python -m src.<name>`)
+│   ├── crew.py                   # supervisor + 3 sub-agents, Traccia init, cost bridge
+│   ├── tools.py                  # read-only AWS tools (all describe/get/list)
+│   ├── waste_demo.py             # clean baseline + 3 engineered silent-waste scenarios
+│   ├── compare.py                # side-by-side "same answer, different bill" view
+│   └── view_trace.py             # nested trace tree + per-agent cost table
+├── probes/                       # standalone diagnostics (verify the design)
+│   ├── probe_multiagent.py       # token usage at every level
+│   └── probe_doublecount.py      # proves supervisor usage excludes sub-agent tokens
+├── scripts/
+│   └── build_pages.py            # builds the static docs/ Pages replay from a recorded run
 ├── iam/
 │   └── read-only-policy.json     # ready-to-use least-privilege policy (reads + Nova Pro invoke)
 ├── ui/                           # FastAPI live control panel (LIVE + REPLAY)
@@ -371,7 +377,7 @@ span.set_attribute("llm.cost.usd", round(cost, 8))
 
 ### No double-counting
 
-Strands runs each sub-agent in its own event loop with its own metrics. A supervisor's `accumulated_usage` is **exclusive** of its sub-agents' tokens (proven in `probe_doublecount.py`), so:
+Strands runs each sub-agent in its own event loop with its own metrics. A supervisor's `accumulated_usage` is **exclusive** of its sub-agents' tokens (proven in `probes/probe_doublecount.py`), so:
 
 ```
 crew total = supervisor + sum(sub-agents)     # no subtraction, no overlap
@@ -467,11 +473,11 @@ Grounded in reading the SDK source and shipping a real crew against it, not the 
 
 | What | Where |
 |------|-------|
-| Change the model | `crew.py` → model id + `pricing_override` |
-| Add / remove a tool | `tools.py` (keep it read-only) + the agent's `tools_list` in `crew.py` |
+| Change the model | `src/crew.py` → model id + `pricing_override` |
+| Add / remove a tool | `src/tools.py` (keep it read-only) + the agent's `tools_list` in `src/crew.py` |
 | Agent ownership (owner / team / org) | `agent_config.json` |
 | Local vs hosted export | set / unset `TRACCIA_API_KEY` |
-| Tune the waste scenarios | `waste_demo.py` |
+| Tune the waste scenarios | `src/waste_demo.py` |
 
 ---
 
@@ -539,7 +545,7 @@ Contributions welcome! Ideas:
 - Add a **Strands / Bedrock auto-instrumentation** shim so the cost bridge is not manual
 - Add more silent-waste patterns (tool thrash, prompt drift, retry storms)
 - Add a Terraform / CloudFormation module for the read-only role
-- Add a GitHub Action that runs `waste_demo.py` and diffs against a committed baseline
+- Add a GitHub Action that runs `python -m src.waste_demo` and diffs against a committed baseline
 
 1. 🍴 Fork the repo
 2. 🌿 Create a branch (`git checkout -b feature/strands-shim`)

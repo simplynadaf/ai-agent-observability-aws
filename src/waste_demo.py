@@ -16,13 +16,13 @@ Strands EventLoopMetrics signal that our Traccia bridge already stamps on the sp
   3. Context bloat    one agent dominates the bill    llm.usage.prompt_tokens
                                                        + llm.cost.usd (per agent)
 
-Usage:
-    python waste_demo.py            # run all three + the clean baseline, print a verdict
-    python waste_demo.py clean      # just the healthy baseline
-    python waste_demo.py loop | redundant | bloat
+Usage (run from the repo root):
+    python -m src.waste_demo            # run all three + the clean baseline, print a verdict
+    python -m src.waste_demo clean      # just the healthy baseline
+    python -m src.waste_demo loop | redundant | bloat
 
 Each run writes its own traces file (traces_<scenario>.jsonl) so you can open any of
-them with `python view_trace.py traces_<scenario>.jsonl`.
+them with `python -m src.view_trace traces_<scenario>.jsonl`.
 """
 from __future__ import annotations
 
@@ -31,8 +31,8 @@ import sys
 
 # Reuse the exact instrumented crew: the model, the Traccia bridge, the tools, the
 # nested-span wiring. Importing crew triggers traccia.init() once.
-import crew as C
-import tools as T
+from . import crew as C
+from . import tools as T
 from strands import Agent
 from traccia import span_scope, force_flush
 
@@ -332,7 +332,7 @@ def main() -> None:
         base = _summarize(clean())
         _verdict("clean", base, None)
         _verdict(which, _summarize(runners[which]()), base)
-        print(f"\n{DIM}open it: python view_trace.py traces_{which}.jsonl{RESET}")
+        print(f"\n{DIM}open it: python -m src.view_trace traces_{which}.jsonl{RESET}")
         return
     if which == "clean":
         _verdict("clean", _summarize(clean()), None)
