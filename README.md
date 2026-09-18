@@ -111,6 +111,33 @@ That is the part nobody shows you. Nested traces and per-agent cost are table st
 
 Each specialist stamps its own `agent.id` / `agent.name`, so from a **single crew run** the dashboard shows four distinct agents with their own token and cost profiles — not one agent logged four times. Each tool opens a **live span around the real boto3 call**, so the timeline shows each AWS read's true duration, not a 0ms marker.
 
+### 📸 Tool spans in Traccia (real traces)
+
+Every agent's tools show up as their own spans on the Execution Timeline, each with a real duration. These are real runs against a live AWS account.
+
+<table>
+<tr>
+<td width="50%" align="center">
+<b>💰 Cost Analyst — 3 tool spans</b><br/>
+<img src="docs/screenshots/trace-cost-analyst.png" alt="Cost Analyst trace showing cost_forecast, daily_cost_trend, and last_month_cost tool spans" width="100%"/>
+</td>
+<td width="50%" align="center">
+<b>🖥️ Health &amp; Ops — 5 tool spans</b><br/>
+<img src="docs/screenshots/trace-health-ops.png" alt="Health and Ops trace showing running_instances, list_functions, list_buckets, list_volumes, and cpu_utilization tool spans" width="100%"/>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<b>🔒 Security Auditor — 4 tool spans</b><br/>
+<img src="docs/screenshots/trace-security-auditor.png" alt="Security Auditor trace showing open_security_groups, mfa_findings, public_s3_buckets, and guardduty_enabled tool spans" width="100%"/>
+</td>
+<td width="50%" align="center">
+<b>🧭 AWS Account Investigator — supervisor (0 direct tools, delegates to 3)</b><br/>
+<img src="docs/screenshots/trace-supervisor.png" alt="Supervisor trace showing the investigation_run span; it delegates to the three specialists and makes no direct AWS calls" width="100%"/>
+</td>
+</tr>
+</table>
+
 ---
 
 ## 🧠 How It Works
