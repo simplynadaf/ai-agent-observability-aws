@@ -316,6 +316,7 @@ ai-agent-observability-aws/
 ├── probe_multiagent.py           # token usage at every level
 ├── probe_doublecount.py          # proves supervisor usage excludes sub-agent tokens
 ├── agent_config.json             # ownership catalog (owner / team / org) → dashboard
+├── build_pages.py                # builds the static docs/ Pages replay from a recorded run
 ├── ui/                           # FastAPI live control panel (LIVE + REPLAY)
 │   ├── app.py                    # /stream SSE backend
 │   ├── index.html                # the animated crew graph
