@@ -24,7 +24,10 @@
     {
       "Sid": "InvokeNovaProOnly",
       "Effect": "Allow",
-      "Action": "bedrock:InvokeModel",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
       "Resource": [
         "arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0",
         "arn:aws:bedrock:*:*:inference-profile/us.amazon.nova-pro-v1:0"

@@ -238,13 +238,13 @@ Four things. The first three are required; the fourth is optional.
 | # | Requirement | Details |
 |---|---|---|
 | 1 | **Python 3.10+** | `python3 --version` to check |
-| 2 | **AWS credentials** | Read-only actions **+ `bedrock:InvokeModel`** for Nova Pro. The repo ships the ready-to-use policy at [`iam/read-only-policy.json`](iam/read-only-policy.json) |
+| 2 | **AWS credentials** | Read-only actions **+ `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream`** for Nova Pro (Strands streams responses). The repo ships the ready-to-use policy at [`iam/read-only-policy.json`](iam/read-only-policy.json) |
 | 3 | **Amazon Nova Pro** | Two steps (see below): **(a)** enable model access in the Bedrock console, **(b)** grant `bedrock:InvokeModel` |
 | 4 | *Traccia API key* | **Optional.** Leave unset to run fully local at **$0**. Set it to also push traces to app.traccia.ai |
 
 > ⚠️ **Nova Pro needs BOTH steps.**
 > **(a) Model access:** in the Bedrock console (`us-east-1`) → *Model access* → enable **`amazon.nova-pro-v1:0`**. This is a Bedrock grant, not an IAM permission, so no policy can do it for you.
-> **(b) Invoke permission:** the `bedrock:InvokeModel` statement in the [IAM policy](#-least-privilege-iam-policy). Without it, the crew gets `AccessDenied` on the first model call.
+> **(b) Invoke permission:** the `bedrock:InvokeModel` + `bedrock:InvokeModelWithResponseStream` statement in the [IAM policy](#-least-privilege-iam-policy) (Strands uses the streaming API). Without it, the crew gets `AccessDenied` on the first model call.
 
 ---
 
@@ -419,7 +419,10 @@ creates, modifies, or deletes any account resource. The full policy ships in the
     {
       "Sid": "InvokeNovaProOnly",
       "Effect": "Allow",
-      "Action": "bedrock:InvokeModel",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
       "Resource": [
         "arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0",
         "arn:aws:bedrock:*:*:inference-profile/us.amazon.nova-pro-v1:0"
