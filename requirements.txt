@@ -1,5 +1,7 @@
-# Runtime
-strands-agents[otel]
-strands-agents-tools
-traccia
-boto3
+# Runtime (pinned to the versions this project was built and verified against, 2026-09).
+# Bump deliberately: Traccia's cost-processor / enricher behavior and the Strands
+# EventLoopMetrics shape are what the cost bridge and per-agent identity depend on.
+strands-agents[otel]==1.55.1
+strands-agents-tools==0.8.8
+traccia==0.1.29
+boto3==1.43.94
