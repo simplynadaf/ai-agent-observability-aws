@@ -351,6 +351,7 @@ ai-agent-observability-aws/
 ├── ui/                           # FastAPI live control panel (LIVE + REPLAY)
 │   ├── app.py                    # /stream SSE backend
 │   ├── index.html                # the animated crew graph
+│   ├── requirements-ui.txt       # UI-only deps (FastAPI, uvicorn)
 │   └── replay/                   # deterministic saved run (free rehearsals)
 └── docs/                         # GitHub Pages replay build + README assets
     ├── architecture.png          # the How It Works diagram

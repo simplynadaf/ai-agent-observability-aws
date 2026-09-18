@@ -4,8 +4,11 @@
 GitHub Pages serves static files only; the live FastAPI /stream endpoint cannot run
 there. This script produces docs/index.html: the same UI, but REPLAY runs entirely in
 the browser from embedded data (the real recorded agent numbers + report), reproducing
-the exact event sequence and pacing of ui/app.py:_replay_events. LIVE is not available
-on Pages (needs Bedrock + boto3) and is hidden in the static build.
+the exact event sequence and pacing of ui/app.py:_replay_events.
+
+LIVE needs Bedrock + boto3 (a real backend), so on Pages both toggle chips stay VISIBLE
+but the page is locked to REPLAY (LIVE chip disabled) to avoid cost. Flip LIVE_ENABLED
+to true in the appended engine below when you are ready to run LIVE from the backend.
 
 Run:  .venv/bin/python build_pages.py
 """
@@ -90,11 +93,28 @@ engine = r"""
     return es;
   }
 
-  // LIVE cannot run on a static host (needs Bedrock + boto3). Force replay + hide toggle.
+  // ---- Pages LIVE switch ----------------------------------------------------
+  // LIVE needs the local FastAPI backend (Bedrock + boto3), which a static host
+  // cannot run. For now we keep BOTH toggle chips VISIBLE but lock the page to
+  // REPLAY to avoid any cost. When you are ready to test LIVE, set this to true
+  // (and serve the UI from the FastAPI backend, not Pages).
+  const LIVE_ENABLED = false;
+
   (function lockToReplay() {
-    mode = "replay";
-    const toggle = document.querySelector(".mode-toggle");
-    if (toggle) toggle.style.display = "none";
+    if (LIVE_ENABLED) return;                 // LIVE on: leave both chips working
+    mode = "replay";                          // LIVE off: force replay, keep chips shown
+    const live = document.getElementById("chipLive");
+    const replay = document.getElementById("chipReplay");
+    if (replay) replay.setAttribute("aria-pressed", "true");
+    if (live) {
+      live.setAttribute("aria-pressed", "false");
+      live.setAttribute("aria-disabled", "true");
+      live.title = "LIVE is disabled here (needs the local backend). Replay only.";
+      live.style.opacity = "0.45";
+      live.style.cursor = "not-allowed";
+      // Swallow clicks so LIVE cannot be selected while disabled.
+      live.onclick = (e) => { e.stopImmediatePropagation(); e.preventDefault(); };
+    }
   })();
 </script>
 """
