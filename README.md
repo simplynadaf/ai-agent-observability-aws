@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🔍 AI Agent Observability on AWS — Catch the Silent Waste (2026)
+# 🔍 AI Agent Observability on AWS: Catch the Silent Waste (2026)
 
 ### Build a read-only multi-agent crew on Amazon Bedrock, put real per-agent cost on every trace, then reproduce three "silent waste" patterns that return a perfect answer, show `200 OK`, and still bill you 1.5x.
 
@@ -56,9 +56,9 @@ Your multi-agent run just returned a **perfect answer**. Clean summary, right re
 
 And you were silently billed up to **1.5x** what you should have been.
 
-That is the part nobody shows you. Nested traces and per-agent cost are table stakes now. The hard problem is the run that **looks completely successful while it burns money** — re-reading the same data, dragging bloated context step to step, looping one extra cycle. None of it shows up as a `500` or a slow span. It shows up on the bill.
+That is the part nobody shows you. Nested traces and per-agent cost are table stakes now. The hard problem is the run that **looks completely successful while it burns money**: re-reading the same data, dragging bloated context step to step, looping one extra cycle. None of it shows up as a `500` or a slow span. It shows up on the bill.
 
-> The research backs this up: **MAST** ([arXiv:2503.13657](https://arxiv.org/abs/2503.13657)) hand-annotated 150 traces across 7 state-of-the-art multi-agent systems and measured a **41–86.7% failure rate** — and many failures do not crash. They complete. They look fine.
+> The research backs this up: **MAST** ([arXiv:2503.13657](https://arxiv.org/abs/2503.13657)) hand-annotated 150 traces across 7 state-of-the-art multi-agent systems and measured a **41-86.7% failure rate**, and many failures do not crash. They complete. They look fine.
 
 **This repo builds a read-only "AWS Account Investigator" crew, wires real cost into every trace span, then reproduces three silent-waste patterns with real Amazon Nova Pro dollars.** Runs at **$0** locally. Nothing is created, modified, or deleted in your AWS account.
 
@@ -83,9 +83,9 @@ That is the part nobody shows you. Nested traces and per-agent cost are table st
 
 ### 💰 Cost Analyst
 **3 tools · Cost Explorer**
-- `cost_forecast` — MTD, month-end forecast, top services
-- `last_month_cost` — month-over-month change
-- `daily_cost_trend` — daily series + spike day
+- `cost_forecast`: MTD, month-end forecast, top services
+- `last_month_cost`: month-over-month change
+- `daily_cost_trend`: daily series + spike day
 
 </td>
 <td width="25%">
@@ -109,7 +109,7 @@ That is the part nobody shows you. Nested traces and per-agent cost are table st
 </tr>
 </table>
 
-Each specialist stamps its own `agent.id` / `agent.name`, so from a **single crew run** the dashboard shows four distinct agents with their own token and cost profiles — not one agent logged four times. Each tool opens a **live span around the real boto3 call**, so the timeline shows each AWS read's true duration, not a 0ms marker.
+Each specialist stamps its own `agent.id` / `agent.name`, so from a **single crew run** the dashboard shows four distinct agents with their own token and cost profiles, not one agent logged four times. Each tool opens a **live span around the real boto3 call**, so the timeline shows each AWS read's true duration, not a 0ms marker.
 
 ### 📸 Tool spans in Traccia (real traces)
 
@@ -118,21 +118,21 @@ Every agent's tools show up as their own spans on the Execution Timeline, each w
 <table>
 <tr>
 <td width="50%" align="center">
-<b>💰 Cost Analyst — 3 tool spans</b><br/>
+<b>💰 Cost Analyst, 3 tool spans</b><br/>
 <img src="docs/screenshots/trace-cost-analyst.png" alt="Cost Analyst trace showing cost_forecast, daily_cost_trend, and last_month_cost tool spans" width="100%"/>
 </td>
 <td width="50%" align="center">
-<b>🖥️ Health &amp; Ops — 5 tool spans</b><br/>
+<b>🖥️ Health &amp; Ops, 5 tool spans</b><br/>
 <img src="docs/screenshots/trace-health-ops.png" alt="Health and Ops trace showing running_instances, list_functions, list_buckets, list_volumes, and cpu_utilization tool spans" width="100%"/>
 </td>
 </tr>
 <tr>
 <td width="50%" align="center">
-<b>🔒 Security Auditor — 4 tool spans</b><br/>
+<b>🔒 Security Auditor, 4 tool spans</b><br/>
 <img src="docs/screenshots/trace-security-auditor.png" alt="Security Auditor trace showing open_security_groups, mfa_findings, public_s3_buckets, and guardduty_enabled tool spans" width="100%"/>
 </td>
 <td width="50%" align="center">
-<b>🧭 AWS Account Investigator — supervisor (0 direct tools, delegates to 3)</b><br/>
+<b>🧭 AWS Account Investigator, supervisor (0 direct tools, delegates to 3)</b><br/>
 <img src="docs/screenshots/trace-supervisor.png" alt="Supervisor trace showing the investigation_run span; it delegates to the three specialists and makes no direct AWS calls" width="100%"/>
 </td>
 </tr>
@@ -159,7 +159,7 @@ Every agent's tools show up as their own spans on the Execution Timeline, each w
 │                        🔒 READ-ONLY AWS APIs       │ ☁️  app.traccia.ai     │ │
 │                        ce · ec2 · cloudwatch · s3  └───────────────────────┘ │
 │                        lambda · iam · guardduty                              │
-│                        (Describe / Get / List — never create/modify/delete)  │
+│                        (Describe / Get / List - never create/modify/delete)  │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -213,9 +213,9 @@ python compare.py traces_clean.jsonl traces_bloat.jsonl   # the side-by-side "di
 
 | Component | Technology |
 |-----------|-----------|
-| 🤖 Agent runtime | [AWS Strands Agents](https://strandsagents.com) — agents-as-tools pattern |
+| 🤖 Agent runtime | [AWS Strands Agents](https://strandsagents.com): agents-as-tools pattern |
 | 🧠 Model | [Amazon Nova Pro](https://aws.amazon.com/ai/generative-ai/nova/) (`amazon.nova-pro-v1:0`) via Bedrock |
-| 📊 Observability | [Traccia](https://traccia.ai) `0.1.29` — OpenTelemetry-native, `$0` file exporter |
+| 📊 Observability | [Traccia](https://traccia.ai) `0.1.29`: OpenTelemetry-native, `$0` file exporter |
 | ☁️ Cloud reads | Cost Explorer · EC2 · CloudWatch · S3 · Lambda · IAM · GuardDuty (read-only) |
 | 🐍 SDK | Python 3.10+, `boto3` |
 | 🖥️ Live control panel | FastAPI + Server-Sent Events (LIVE + REPLAY modes) |
@@ -227,7 +227,7 @@ python compare.py traces_clean.jsonl traces_bloat.jsonl   # the side-by-side "di
 - ✅ **Python 3.10+**
 - ✅ **AWS credentials** with the read-only actions in the [IAM policy](#-least-privilege-iam-policy) (or the managed `SecurityAudit` + `ViewOnlyAccess`)
 - ✅ **Amazon Nova Pro enabled** in Bedrock, `us-east-1` (`amazon.nova-pro-v1:0`)
-- ✅ *(Optional)* a Traccia API key for the hosted dashboard — leave it unset for the `$0` local path
+- ✅ *(Optional)* a Traccia API key for the hosted dashboard. Leave it unset for the `$0` local path
 
 ---
 
@@ -261,13 +261,13 @@ python waste_demo.py      # clean baseline + 3 waste scenarios + delta verdict
 
 ## 📊 Before vs After
 
-Same crew, same query, same read-only AWS — different bill. Every item is real, measured token usage.
+Same crew, same query, same read-only AWS, different bill. Every item is real, measured token usage.
 
 | Item | 🟢 CLEAN baseline | 🔴 CONTEXT BLOAT |
 |------|-------------------|-------------------|
 | Final answer | Correct | Correct |
 | Crew total cost | **$0.008131** | **$0.012366** |
-| Delta | — | **+$0.004235 (1.5x)** |
+| Delta |, | **+$0.004235 (1.5x)** |
 | APM status | `200 OK` | `200 OK` |
 | Where it shows | nowhere in APM | only in the **trace**, on per-agent cost |
 
@@ -276,7 +276,7 @@ Same crew, same query, same read-only AWS — different bill. Every item is real
 ## 🎬 Example: same answer, different bill
 
 ```
-=== CLEAN  vs  BLOAT ===   (same query, same crew, same read-only AWS — different bill)
+=== CLEAN  vs  BLOAT ===   (same query, same crew, same read-only AWS - different bill)
 
   agent                          CLEAN                          BLOAT
   health_ops        $0.002463 2279in/200out 3c   $0.004802 2871in/783out 2c  <- 1.9x
@@ -318,19 +318,19 @@ ai-agent-observability-aws/
 
 ## 🌉 The Cost Bridge (and one gotcha)
 
-Traccia auto-instruments LangChain, CrewAI, and the OpenAI/Anthropic/Gemini clients — but **not** Strands or raw Bedrock `converse`. So for this stack you stamp the cost yourself. Read the token usage Strands already gives you, turn it into dollars, attach it to the span:
+Traccia auto-instruments LangChain, CrewAI, and the OpenAI/Anthropic/Gemini clients, but **not** Strands or raw Bedrock `converse`. So for this stack you stamp the cost yourself. Read the token usage Strands already gives you, turn it into dollars, attach it to the span:
 
 ```python
 u = result.metrics.accumulated_usage          # {'inputTokens', 'outputTokens', 'totalTokens'}
 inp, out = u["inputTokens"], u["outputTokens"]
 cost = inp/1000*0.0008 + out/1000*0.0032       # Nova Pro us-east-1
 
-span.set_attribute("llm.model", "amazon.nova-pro-v1:0")  # REQUIRED — wrong key = silently $0
+span.set_attribute("llm.model", "amazon.nova-pro-v1:0")  # REQUIRED - wrong key = silently $0
 span.set_attribute("span.type", "LLM")
 span.set_attribute("llm.cost.usd", round(cost, 8))
 ```
 
-> ⚠️ **The gotcha:** Traccia's cost processor computes cost only if `span.type == "LLM"`, `llm.model` is present, **and** both token counts are set. Miss any one and it silently returns — no error, no warning. Set `llm.request.model` instead of `llm.model` and your "LLM Calls / Total Tokens" tiles read zero while the spans clearly have tokens. Set `llm.model` and they light up.
+> ⚠️ **The gotcha:** Traccia's cost processor computes cost only if `span.type == "LLM"`, `llm.model` is present, **and** both token counts are set. Miss any one and it silently returns, no error, no warning. Set `llm.request.model` instead of `llm.model` and your "LLM Calls / Total Tokens" tiles read zero while the spans clearly have tokens. Set `llm.model` and they light up.
 
 ### No double-counting
 
@@ -377,21 +377,21 @@ Every action is a `Describe`, `Get`, or `List`. Nothing creates, modifies, or de
 
 ## 🧾 An Honest Take on Traccia
 
-Grounded in reading the SDK source and shipping a real crew against it — not the marketing page.
+Grounded in reading the SDK source and shipping a real crew against it, not the marketing page.
 
 **What is genuinely good**
 
 - **OpenTelemetry-native.** Spans, processors, resource attributes are standard OTel. No lock-in; point OTLP anywhere.
 - **$0 and offline by default.** File exporter with no key; set `TRACCIA_API_KEY` and the same spans push to the dashboard.
 - **More than a tracer.** A real cost engine + bundled pricing snapshot (Nova, Claude, …), a staleness warning, and auto-instrumentation for LangChain / CrewAI / OpenAI.
-- **Span-level agent identity is the best part.** A span-level `agent.id` / `agent.name` overrides the process default — which is exactly what lets one process render as a four-agent fleet.
+- **Span-level agent identity is the best part.** A span-level `agent.id` / `agent.name` overrides the process default, which is exactly what lets one process render as a four-agent fleet.
 
 **Where it made us work**
 
-- **No Strands / raw-Bedrock integration yet** — the cost bridge is manual (fine, and it gives you control).
-- **The cost processor fails silently** on a missing `llm.model` — a one-line debug log would fix it.
-- **A couple of sharp edges live only in the source** — `span_scope(parent=None)` inherits the current context; `span_scope` is not a context manager.
-- **Docs are the real gap** — we learned the precedence rules by reading the SDK. The capability is there; the polish that is missing is mostly documentation.
+- **No Strands / raw-Bedrock integration yet:** the cost bridge is manual (fine, and it gives you control).
+- **The cost processor fails silently** on a missing `llm.model`; a one-line debug log would fix it.
+- **A couple of sharp edges live only in the source:** `span_scope(parent=None)` inherits the current context; `span_scope` is not a context manager.
+- **Docs are the real gap:** we learned the precedence rules by reading the SDK. The capability is there; the polish that is missing is mostly documentation.
 
 ---
 
@@ -411,11 +411,11 @@ Grounded in reading the SDK source and shipping a real crew against it — not t
 
 | Problem | Fix |
 |---------|-----|
-| Dashboard "LLM Calls / Total Tokens" read **0** | You set `llm.request.model`, not `llm.model`. The cost processor skips silently — set `llm.model` + `span.type="LLM"` |
-| Sub-agents collapse into **one trace** | `span_scope(parent=None)` inherits the current context — detach it before starting each agent span |
+| Dashboard "LLM Calls / Total Tokens" read **0** | You set `llm.request.model`, not `llm.model`. The cost processor skips silently, set `llm.model` + `span.type="LLM"` |
+| Sub-agents collapse into **one trace** | `span_scope(parent=None)` inherits the current context, detach it before starting each agent span |
 | Tool spans show **0ms** | You reconstructed spans after the run. Open a **live** span around the real boto3 call instead |
 | Tool work all buckets under the **supervisor** | Stamp each tool span with its calling agent's `agent.id` / `agent.name` |
-| `401 Unauthorized` noise | You have `TRACCIA_API_KEY` unset but OTLP on — use the file exporter (`use_otlp=False`) for the `$0` path |
+| `401 Unauthorized` noise | You have `TRACCIA_API_KEY` unset but OTLP on, use the file exporter (`use_otlp=False`) for the `$0` path |
 | Cost numbers look **near-zero** | Cost Explorer returns what your account actually spent; a quiet account honestly shows small numbers |
 
 ---
@@ -425,31 +425,31 @@ Grounded in reading the SDK source and shipping a real crew against it — not t
 <details>
 <summary><b>Does Traccia watch my AWS account?</b></summary>
 
-No. Traccia watches the **agent** — its steps, tokens, cost, and tool calls. AWS is just the subject matter the agent reads. That is a strength: the observability story is stack-agnostic.
+No. Traccia watches the **agent** its steps, tokens, cost, and tool calls. AWS is just the subject matter the agent reads. That is a strength: the observability story is stack-agnostic.
 </details>
 
 <details>
 <summary><b>Do I need a paid Traccia plan?</b></summary>
 
-No. With no API key, traces write to a local `traces.jsonl` via the file exporter — the `$0` path used throughout. The hosted dashboard at app.traccia.ai is optional and only adds the visualization.
+No. With no API key, traces write to a local `traces.jsonl` via the file exporter, the `$0` path used throughout. The hosted dashboard at app.traccia.ai is optional and only adds the visualization.
 </details>
 
 <details>
 <summary><b>Are the silent-waste scenarios faked?</b></summary>
 
-The patterns are **engineered to fire on cue** so you can demo them, and the code says so. Every dollar is real Nova Pro token usage. In production these patterns appear on their own — just not on a schedule you can record.
+The patterns are **engineered to fire on cue** so you can demo them, and the code says so. Every dollar is real Nova Pro token usage. In production these patterns appear on their own, just not on a schedule you can record.
 </details>
 
 <details>
 <summary><b>Why model each agent as its own trace instead of one nested tree?</b></summary>
 
-Because a real fleet is independently owned and operated. Each agent gets its own top-level trace tied by a shared `session.id`; "group by session" folds them back into one investigation. Prefer one nested tree? Keep the supervisor as the parent instead of detaching the context — both are valid.
+Because a real fleet is independently owned and operated. Each agent gets its own top-level trace tied by a shared `session.id`; "group by session" folds them back into one investigation. Prefer one nested tree? Keep the supervisor as the parent instead of detaching the context, both are valid.
 </details>
 
 <details>
 <summary><b>Is the agent really read-only?</b></summary>
 
-Yes — by IAM policy, not by hope. Every tool is a `Describe` / `Get` / `List`. Attach the least-privilege role above and the "can't touch anything" property is literally true.
+Yes, by IAM policy, not by hope. Every tool is a `Describe` / `Get` / `List`. Attach the least-privilege role above and the "can't touch anything" property is literally true.
 </details>
 
 ---
@@ -460,7 +460,7 @@ Yes — by IAM policy, not by hope. Every tool is a `Describe` / `Get` / `List`.
 📝 **Full write-up:** _coming soon_
 🕹️ **Live replay (browser, no backend):** https://simplynadaf.github.io/ai-agent-observability-aws/
 
-This is **Episode 1** (Observability) of a two-part series with [Traccia](https://traccia.ai). Next up: **Governance** — runtime policy enforcement, guardrails, and EU AI Act evidence.
+This is **Episode 1** (Observability) of a two-part series with [Traccia](https://traccia.ai). Next up: **Governance**, runtime policy enforcement, guardrails, and EU AI Act evidence.
 
 ---
 
@@ -483,7 +483,7 @@ Contributions welcome! Ideas:
 
 ## 📝 License
 
-Apache-2.0 — see the [LICENSE](LICENSE) file.
+Apache-2.0, see the [LICENSE](LICENSE) file.
 
 ---
 
@@ -495,7 +495,7 @@ Apache-2.0 — see the [LICENSE](LICENSE) file.
 
 ## 👨‍💻 Author
 
-**Sarvar Nadaf** — Cloud Architect | AI Infrastructure & DevOps
+**Sarvar Nadaf** | Cloud Architect | AI Infrastructure & DevOps
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-sarvar04-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/sarvar04/)
 [![GitHub](https://img.shields.io/badge/GitHub-simplynadaf-181717?style=flat-square&logo=github)](https://github.com/simplynadaf)
@@ -507,6 +507,6 @@ Apache-2.0 — see the [LICENSE](LICENSE) file.
 
 **If this project helped you see where your agents burn money, consider giving it a ⭐**
 
-*Built with 💜 on AWS — Strands • Amazon Nova Pro • Traccia • OpenTelemetry*
+*Built with 💜 on AWS: Strands • Amazon Nova Pro • Traccia • OpenTelemetry*
 
 </div>
