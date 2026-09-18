@@ -233,32 +233,55 @@ python compare.py traces_clean.jsonl traces_bloat.jsonl   # the side-by-side "di
 
 ## 📋 Prerequisites
 
-- ✅ **Python 3.10+**
-- ✅ **AWS credentials** with the read-only actions in the [IAM policy](#-least-privilege-iam-policy) plus `bedrock:InvokeModel` for Nova Pro (the repo ships the ready-to-use policy at `iam/read-only-policy.json`)
-- ✅ **Amazon Nova Pro** (1) enabled in the Bedrock console under *Model access* (`us-east-1`, `amazon.nova-pro-v1:0`) and (2) invokable via `bedrock:InvokeModel` in your policy
-- ✅ *(Optional)* a Traccia API key for the hosted dashboard. Leave it unset for the `$0` local path
+Four things. The first three are required; the fourth is optional.
+
+| # | Requirement | Details |
+|---|---|---|
+| 1 | **Python 3.10+** | `python3 --version` to check |
+| 2 | **AWS credentials** | Read-only actions **+ `bedrock:InvokeModel`** for Nova Pro. The repo ships the ready-to-use policy at [`iam/read-only-policy.json`](iam/read-only-policy.json) |
+| 3 | **Amazon Nova Pro** | Two steps (see below): **(a)** enable model access in the Bedrock console, **(b)** grant `bedrock:InvokeModel` |
+| 4 | *Traccia API key* | **Optional.** Leave unset to run fully local at **$0**. Set it to also push traces to app.traccia.ai |
+
+> ⚠️ **Nova Pro needs BOTH steps.**
+> **(a) Model access:** in the Bedrock console (`us-east-1`) → *Model access* → enable **`amazon.nova-pro-v1:0`**. This is a Bedrock grant, not an IAM permission, so no policy can do it for you.
+> **(b) Invoke permission:** the `bedrock:InvokeModel` statement in the [IAM policy](#-least-privilege-iam-policy). Without it, the crew gets `AccessDenied` on the first model call.
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone + install
+### Step 1: Clone and install
 
 ```bash
 git clone https://github.com/simplynadaf/ai-agent-observability-aws.git
 cd ai-agent-observability-aws
-python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt
+
+python3 -m venv .venv && . .venv/bin/activate    # create + activate a clean venv
+pip install -r requirements.txt                  # pinned, tested versions
 ```
 
-### 2. Run the crew against real AWS
+### Step 2: Set up AWS access (one time)
 
 ```bash
-python crew.py            # runs the crew, writes traces.jsonl (local, $0)
+# create the least-privilege policy (run with your own admin credentials)
+aws iam create-policy \
+  --policy-name AgentObservabilityReadOnly \
+  --policy-document file://iam/read-only-policy.json
+
+# then attach it to the user/role that runs the crew, and enable Nova Pro
+# model access in the Bedrock console (see the Nova Pro note above)
+```
+
+> 💡 Prefer AWS managed policies? Attach **`SecurityAudit`** + **`ViewOnlyAccess`** for the reads, then add the `bedrock:InvokeModel` statement on top (the managed pair does not include it).
+
+### Step 3: Run the crew against real AWS
+
+```bash
+python crew.py            # runs the crew, writes traces.jsonl  (local, $0 to Traccia)
 python view_trace.py      # renders the nested tree + per-agent cost table
 ```
 
-### 3. Watch the silent waste
+### Step 4: Watch the silent waste
 
 ```bash
 python waste_demo.py      # clean baseline + 3 waste scenarios + delta verdict
