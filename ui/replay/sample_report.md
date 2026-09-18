@@ -2,36 +2,36 @@ Here's the synthesized report based on the gathered information:
 
 ### Health Report
 **EC2 Instances:**
-- Instance ID: i-019264cdc1b1eee07
+- Instance ID: i-0abc123def4567890
 - Instance Type: t3.2xlarge
 - CPU Utilization (last hour): 85%
 
 **Lambda Functions:**
-- bedrock-cost-agent (runtime: python3.12)
-- genai-image-titan (runtime: python3.13)
+- cost-agent-fn (runtime: python3.12)
+- image-fn-a (runtime: python3.13)
 - Demo (runtime: python3.10)
-- terraform-lambda-hello (runtime: python3.11)
-- Bedrock-OCR (runtime: python3.14)
-- Demo-API (runtime: python3.14)
-- terraform-lambda-s3-processor (runtime: python3.11)
-- genai-image-generator (runtime: python3.13)
+- hello-fn (runtime: python3.11)
+- ocr-fn (runtime: python3.14)
+- demo-api-fn (runtime: python3.14)
+- s3-processor-fn (runtime: python3.11)
+- image-fn-b (runtime: python3.13)
 
 **S3 Buckets:**
-- dev.sarvarnadaf.com
-- dev.to-articles
-- devops-mustkhim
-- devops-sarvar
-- devto-article-promotion
-- infinite-gallery-site-175662053988
-- sarvarnadaf.com
-- sarvars-youtube-videos
+- dev.example-app.com
+- content-articles
+- devops-team-a
+- devops-team-b
+- article-promotion
+- demo-gallery-site-111122223333
+- example-app.com
+- media-assets
 
 **EBS Volumes:**
-- Volume ID: vol-02b2d72609cf79295
+- Volume ID: vol-0aaaa1111bbbb2222
   - Size: 150 GiB
   - Type: gp2
   - State: in-use
-- Volume ID: vol-00e39dd788a06ad4b
+- Volume ID: vol-0cccc3333dddd4444
   - Size: 50 GiB
   - Type: gp3
   - State: in-use
@@ -43,11 +43,11 @@ Here's the synthesized report based on the gathered information:
 **Security Risks Summary:**
 
 1. **Security groups open to the whole internet:**
-   - **Finding:** Security groups `sg-055250cbcc6f3b37b`, `sg-de63a5eb`, and `sg-03f6adb963161c919` have inbound rules open to `0.0.0.0/0` on ports `22` and `3389`.
+   - **Finding:** Security groups `sg-0aaaa1111bbbb2222`, `sg-0eeee5555`, and `sg-0cccc3333dddd4444` have inbound rules open to `0.0.0.0/0` on ports `22` and `3389`.
    - **Risk:** These open ports allow unrestricted access from any IP address, potentially enabling unauthorized access and attacks.
 
 2. **MFA gaps:**
-   - **Finding:** The root account has MFA enabled. However, IAM users `arman-nadaf`, `ep2-n8n-bedrock-demo`, `github-action`, `naisha`, `nightshift-test-user`, `Pratik`, `salman`, `sarvar-s`, `server`, and `Terraform` lack MFA.
+   - **Finding:** The root account has MFA enabled. However, IAM users `dev-user`, `automation-demo`, `ci-deploy`, `app-service`, `batch-runner`, `analyst-a`, `analyst-b`, `platform-admin`, `svc-runner`, and `iac-runner` lack MFA.
    - **Risk:** IAM users without MFA are more susceptible to unauthorized access, increasing the risk of account compromise.
 
 3. **S3 buckets not fully protected by a public access block:**
