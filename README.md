@@ -11,6 +11,8 @@
 [![OpenTelemetry](https://img.shields.io/badge/Built%20on-OpenTelemetry-425CC7?style=for-the-badge&logo=opentelemetry&logoColor=white)](https://opentelemetry.io)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-A855F7?style=for-the-badge)](LICENSE)
 
+[![Live Demo](https://img.shields.io/badge/🕹️%20Live%20Demo-Try%20it%20in%20your%20browser-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://simplynadaf.github.io/ai-agent-observability-aws/)
+
 [![Stars](https://img.shields.io/github/stars/simplynadaf/ai-agent-observability-aws?style=social)](https://github.com/simplynadaf/ai-agent-observability-aws/stargazers)
 [![Forks](https://img.shields.io/github/forks/simplynadaf/ai-agent-observability-aws?style=social)](https://github.com/simplynadaf/ai-agent-observability-aws/network/members)
 [![Issues](https://img.shields.io/github/issues/simplynadaf/ai-agent-observability-aws)](https://github.com/simplynadaf/ai-agent-observability-aws/issues)
