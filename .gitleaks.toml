@@ -1,0 +1,34 @@
+# gitleaks config for ai-agent-observability-aws.
+# Extends the default ruleset, then allowlists this repo's INTENTIONAL demo
+# placeholders so CI does not fail on fixtures that are safe by design.
+#
+# The allowlist below is deliberately narrow: only documented example values
+# and generated demo data. It does NOT relax detection of real credentials.
+
+title = "ai-agent-observability-aws gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe demo placeholders and fixtures"
+
+# Placeholder values that appear in docs and .env.example.
+regexes = [
+  '''your_traccia_api_key_here''',
+  # AWS-reserved example account ids used throughout the demo report/trace.
+  '''111122223333''',
+  '''123456789012''',
+  # Obvious placeholder resource ids in the sample report (i-0abc..., vol-0aaaa..., sg-0aaaa...).
+  '''(i-0abc123def4567890|vol-0[a-f0-9]{4}[a-f0-9]*|sg-0[a-f0-9]{4}[a-f0-9]*)''',
+]
+
+# Files that are pure demo fixtures / documentation. The trace file holds
+# 19-digit epoch-nanosecond timestamps and sanitized attributes only.
+paths = [
+  '''ui/replay/sample_run\.jsonl''',
+  '''ui/replay/sample_report\.md''',
+  '''\.env\.example''',
+  # our own detection patterns live here (they are rules, not secrets)
+  '''scripts/pre-commit-secrets\.sh''',
+]
