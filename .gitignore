@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Traccia trace output (regenerated on each run)
+traces.jsonl
+traces_*.jsonl
+
+# The replay sample trace IS required for the UI demo - keep it tracked.
+!ui/replay/sample_run.jsonl
+
+# Local logs
+*.log
+
+# Secrets - the tracked .env holds ONLY a placeholder (your_traccia_api_key_here).
+# Put your REAL key in .env.local (ignored below) or paste it into .env locally
+# without committing. Never commit a real key.
+.env.local
+
+
+# Internal working files - never publish
+PROJECT-STATUS.md
+scripts/sanitize_replay.py

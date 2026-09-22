@@ -1,0 +1,44 @@
+{
+  "agents": [
+    {
+      "id": "aws-investigator",
+      "name": "AWS Account Investigator",
+      "type": "orchestrator",
+      "description": "Read-only supervisor that plans an account investigation, delegates to the cost, health, and security specialists, and synthesizes a single report.",
+      "owner": "Sarvar Nadaf",
+      "team": "platform-observability",
+      "org_id": "sarvar-cloud",
+      "consuming_teams": ["finops", "sre", "security"]
+    },
+    {
+      "id": "cost-analyst",
+      "name": "Cost Analyst",
+      "type": "analytics",
+      "description": "Read-only FinOps specialist. Reads Cost Explorer for month-to-date spend by service, the account month-end forecast, last month's total for month-over-month change, and the daily cost trend to catch spikes.",
+      "owner": "Sarvar Nadaf",
+      "team": "finops",
+      "org_id": "sarvar-cloud",
+      "consuming_teams": ["finance", "platform-observability"]
+    },
+    {
+      "id": "health-ops",
+      "name": "Health & Ops",
+      "type": "sre",
+      "description": "Read-only SRE specialist. Inventories EC2, EBS, Lambda and S3, and reads CloudWatch CPU to flag health and idle-resource findings.",
+      "owner": "Sarvar Nadaf",
+      "team": "sre",
+      "org_id": "sarvar-cloud",
+      "consuming_teams": ["platform-observability"]
+    },
+    {
+      "id": "security-auditor",
+      "name": "Security Auditor",
+      "type": "security",
+      "description": "Read-only security specialist. Checks for security groups open to the internet (0.0.0.0/0), MFA gaps on the root account and IAM users, public S3 buckets, and whether GuardDuty is enabled.",
+      "owner": "Sarvar Nadaf",
+      "team": "security",
+      "org_id": "sarvar-cloud",
+      "consuming_teams": ["platform-observability", "compliance"]
+    }
+  ]
+}

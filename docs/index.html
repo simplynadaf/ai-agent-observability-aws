@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AWS Account Investigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  @property --edge-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+
+  :root {
+    --bg:            #0a0a0b;
+    --bg-tint:       #0d0b12;
+    --surface:       rgba(255,255,255,0.028);
+    --border:        rgba(255,255,255,0.09);
+    --border-strong: rgba(255,255,255,0.16);
+    --text:          #ecebf0;
+    --text-dim:      #a09fb0;
+    --text-faint:    #6b6a7d;
+    --accent:        #a78bd9;
+    --accent-strong: #8b6fd0;
+    --accent-glow:   rgba(139,111,208,0.45);
+    --idle:   #4a4a58;
+    --run:    #57d98a;   --run-glow:  rgba(87,217,138,0.55);
+    --done:   #e0607a;   --done-glow: rgba(224,96,122,0.5);
+    --amber:  #e0a84c;   --amber-glow:rgba(224,168,76,0.55);
+    --ease:   cubic-bezier(0.32,0.72,0,1);
+    --r:      16px;
+    --font: "Geist","Satoshi",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono: "Geist Mono","SF Mono",ui-monospace,"JetBrains Mono",monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--font);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden; position: relative; min-height: 100vh;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(60% 55% at 50% -8%, rgba(139,111,208,0.16), transparent 62%),
+      radial-gradient(45% 40% at 12% 108%, rgba(139,111,208,0.10), transparent 60%),
+      radial-gradient(50% 45% at 92% 20%, rgba(120,90,200,0.07), transparent 60%),
+      linear-gradient(180deg, var(--bg-tint), var(--bg) 60%);
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    opacity: 0.045; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .app { position: relative; z-index: 2; max-width: 1000px; margin: 0 auto; padding: 40px 28px 72px; }
+
+  /* hero banner */
+  .hero { text-align: center; margin: 18px 0 40px; position: relative; }
+  .hero-emblem {
+    width: 64px; height: 64px; margin: 0 auto 20px; border-radius: 20px;
+    display: grid; place-items: center; position: relative;
+    background: radial-gradient(120% 120% at 30% 20%, rgba(139,111,208,0.28), rgba(139,111,208,0.06));
+    border: 1px solid rgba(139,111,208,0.35);
+    box-shadow: 0 0 60px -12px var(--accent-glow), inset 0 1px 1px rgba(255,255,255,0.14);
+  }
+  .hero-emblem::before {
+    content: ""; position: absolute; inset: -1px; border-radius: 20px; padding: 1px;
+    background: conic-gradient(from var(--edge-angle), transparent, var(--accent), transparent 30%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: spinEdge 5s linear infinite; opacity: 0.9;
+  }
+  @keyframes spinEdge { to { --edge-angle: 360deg; } }
+  .logo-dot {
+    width: 30px; height: 30px; border-radius: 9px; flex: none; z-index: 1;
+    background: linear-gradient(150deg, var(--accent), var(--accent-strong));
+    box-shadow: 0 0 22px var(--accent-glow), inset 0 1px 1px rgba(255,255,255,0.35); position: relative;
+  }
+  .logo-dot::after { content: ""; position: absolute; inset: 7px; border-radius: 4px; background: var(--bg); opacity: 0.55; }
+  h1 {
+    font-size: 38px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.05;
+    background: linear-gradient(180deg, #fff 30%, #c9c3dd 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sub { color: var(--text-dim); font-size: 15px; margin: 12px auto 0; text-align: center; max-width: 520px; line-height: 1.5; }
+  .sub b { color: var(--text); font-weight: 500; }
+  .hero-pills { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.02em;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 13px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--run); box-shadow: 0 0 8px var(--run-glow); }
+
+  /* prompt */
+  /* futuristic centered command console: search box -> mode toggle -> Investigate */
+  .console { display: flex; flex-direction: column; align-items: center; gap: 18px; margin-bottom: 40px; width: 100%; max-width: 640px; margin-left: auto; margin-right: auto; }
+  .prompt {
+    display: flex; gap: 10px; align-items: flex-start; position: relative; width: 100%;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 16px 18px;
+    backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 60px -30px rgba(0,0,0,0.9);
+    transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  }
+  .prompt::before {
+    content: ""; position: absolute; inset: -1px; border-radius: var(--r); padding: 1px; pointer-events: none;
+    background: linear-gradient(120deg, transparent, var(--accent), transparent);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: 0; transition: opacity 0.35s var(--ease);
+  }
+  .prompt.focused { border-color: rgba(139,111,208,0.45); box-shadow: 0 0 0 4px rgba(139,111,208,0.10), 0 24px 60px -30px rgba(0,0,0,0.9); }
+  .prompt.focused::before { opacity: 0.8; }
+  .prompt .search-ico { width: 18px; height: 18px; flex: none; color: var(--text-faint); margin-top: 3px; transition: color 0.3s var(--ease); }
+  .prompt.focused .search-ico { color: var(--accent); }
+  .prompt textarea {
+    flex: 1; resize: none; border: 0; outline: 0; background: transparent; color: var(--text);
+    font-family: var(--font); font-size: 15.5px; line-height: 1.5; padding: 1px 2px;
+    field-sizing: content; min-height: 24px; max-height: 140px;
+  }
+  .prompt textarea::placeholder { color: var(--text-faint); }
+
+  /* segmented LIVE / REPLAY toggle, centered */
+  .mode-toggle {
+    display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .chip {
+    font-size: 11px; font-family: var(--mono); color: var(--text-faint); letter-spacing: 0.06em;
+    border: 0; border-radius: 999px; padding: 6px 16px; cursor: pointer; user-select: none;
+    transition: color 0.25s var(--ease), background 0.25s var(--ease), box-shadow 0.25s var(--ease); white-space: nowrap;
+  }
+  .chip[aria-pressed="true"] {
+    color: #fff; background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+    box-shadow: 0 4px 14px -4px var(--accent-glow);
+  }
+
+  /* big centered Investigate button with futuristic glow */
+  .btn {
+    border: 0; cursor: pointer; padding: 4px; border-radius: 14px; position: relative;
+    background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+    box-shadow: 0 10px 34px -10px var(--accent-glow), 0 1px 0 rgba(255,255,255,0.4) inset;
+    transition: transform 0.18s var(--ease), filter 0.18s var(--ease), opacity 0.18s var(--ease);
+  }
+  .btn::after {
+    content: ""; position: absolute; inset: -3px; border-radius: 16px; z-index: -1;
+    background: radial-gradient(60% 120% at 50% 50%, var(--accent-glow), transparent 70%);
+    opacity: 0.6; filter: blur(10px);
+  }
+  .btn .btn-inner {
+    display: flex; align-items: center; gap: 9px; padding: 12px 30px; border-radius: 11px;
+    background: rgba(10,10,12,0.12); color: #fff; font-size: 15px; font-weight: 600; letter-spacing: 0.01em;
+    border: 1px solid rgba(255,255,255,0.16); white-space: nowrap;
+  }
+  .btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn svg { width: 16px; height: 16px; }
+
+  /* graph */
+  .stage { position: relative; padding: 8px 0 4px; }
+  #wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; }
+  .supervisor-row { display: flex; justify-content: center; margin-bottom: 74px; position: relative; z-index: 1; }
+  .agents-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; position: relative; z-index: 1; }
+
+  .node {
+    position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 18px; backdrop-filter: blur(16px) saturate(1.25); -webkit-backdrop-filter: blur(16px) saturate(1.25);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 30px 70px -40px rgba(0,0,0,0.95);
+    transition: border-color 0.5s var(--ease), transform 0.5s var(--ease), box-shadow 0.5s var(--ease); will-change: transform;
+  }
+  .node.supervisor { width: 340px; }
+  .node .head { display: flex; align-items: center; gap: 11px; }
+  .lamp {
+    width: 11px; height: 11px; border-radius: 50%; flex: none; background: var(--idle);
+    transition: background 0.45s var(--ease), box-shadow 0.45s var(--ease);
+  }
+  .node .title { font-size: 14px; font-weight: 600; }
+  .node .role { font-size: 11px; color: var(--text-faint); font-family: var(--mono); margin-top: 2px; }
+  .node .status {
+    margin-left: auto; font-size: 10.5px; font-family: var(--mono); color: var(--text-faint);
+    text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border);
+    transition: color 0.4s var(--ease), border-color 0.4s var(--ease);
+  }
+  /* activity line: what the agent is doing (no metrics) */
+  .node .activity {
+    font-size: 12.5px; color: var(--text-dim); margin-top: 13px; min-height: 18px;
+    display: flex; align-items: center; gap: 8px; font-family: var(--mono);
+    opacity: 0; transform: translateY(3px); transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+  }
+  .node.active .activity { opacity: 1; transform: none; }
+  .node .activity .spin {
+    width: 11px; height: 11px; flex: none; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--run); animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .node[data-state="running"] { border-color: rgba(87,217,138,0.4); transform: translateY(-3px); }
+  .node[data-state="running"] .lamp { background: var(--run); box-shadow: 0 0 0 4px var(--run-glow); animation: lampPulse 1.15s var(--ease) infinite; }
+  .node[data-state="running"] .status { color: var(--run); border-color: rgba(87,217,138,0.35); }
+  .node[data-state="done"] { border-color: rgba(224,96,122,0.34); }
+  .node[data-state="done"] .lamp { background: var(--done); box-shadow: 0 0 14px var(--done-glow); }
+  .node[data-state="done"] .status { color: var(--done); border-color: rgba(224,96,122,0.3); }
+  .node[data-state="done"] .activity .spin { display: none; }
+  .node[data-state="done"] .activity::before { content: "✓"; color: var(--done); font-weight: 700; }
+  .node[data-state="amber"] { border-color: rgba(224,168,76,0.4); }
+  .node[data-state="amber"] .lamp { background: var(--amber); box-shadow: 0 0 14px var(--amber-glow); }
+  .node[data-state="amber"] .status { color: var(--amber); border-color: rgba(224,168,76,0.35); }
+  .node[data-state="amber"] .activity .spin { display: none; }
+  .node[data-state="amber"] .activity::before { content: "⚠"; color: var(--amber); }
+
+  @keyframes lampPulse {
+    0%,100% { box-shadow: 0 0 0 3px var(--run-glow); }
+    50%     { box-shadow: 0 0 0 7px rgba(87,217,138,0.12); }
+  }
+
+  /* #3 service chips: the real AWS services each agent reads (read-only) */
+  .svc { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .svc .chip-svc {
+    font-family: var(--mono); font-size: 10px; color: var(--text-faint);
+    border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; letter-spacing: 0.02em;
+    transition: color 0.4s var(--ease), border-color 0.4s var(--ease), background 0.4s var(--ease);
+  }
+  .node[data-state="running"] .chip-svc { color: var(--run); border-color: rgba(87,217,138,0.3); background: rgba(87,217,138,0.06); }
+  .node[data-state="done"] .chip-svc { color: var(--text-dim); border-color: var(--border); }
+
+  /* #1 idle life: cards breathe faintly + wires shimmer even before a run */
+  .node[data-state="idle"] .lamp { animation: idleBreath 3.4s ease-in-out infinite; }
+  @keyframes idleBreath { 0%,100% { opacity: 0.5; } 50% { opacity: 0.9; } }
+
+  /* #2 progress heartbeat under the prompt */
+  .heartbeat { height: 2px; width: 100%; margin: -26px 0 30px; border-radius: 2px; overflow: hidden; background: rgba(255,255,255,0.05); opacity: 0; transition: opacity 0.4s var(--ease); }
+  .heartbeat.on { opacity: 1; }
+  .heartbeat .bar { height: 100%; width: 40%; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: hb 1.3s var(--ease) infinite; }
+  .heartbeat.done .bar { animation: none; width: 100%; background: var(--accent); opacity: 0.5; }
+  @keyframes hb { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+
+  /* #4 fan-in: supervisor gets a distinct "synthesizing" ring */
+  .node.supervisor[data-state="synth"] { border-color: var(--accent-strong); transform: translateY(-2px); }
+  .node.supervisor[data-state="synth"] .lamp { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); animation: lampPulse 1.15s var(--ease) infinite; }
+  .node.supervisor[data-state="synth"] .status { color: var(--accent); border-color: rgba(139,111,208,0.4); }
+
+  /* output (the detailed report — the payoff on this screen) */
+  .report-card {
+    margin-top: 40px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 24px 26px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 30px 70px -46px rgba(0,0,0,0.95);
+    opacity: 0; transform: translateY(10px); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+  }
+  .report-card.show { opacity: 1; transform: none; }
+  .report-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .report-head .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+  .report-head h2 { font-size: 14px; font-weight: 600; }
+  .report-head .traccia-link {
+    margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--accent);
+    text-decoration: none; border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px;
+    transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+  }
+  .report-head .traccia-link:hover { border-color: var(--border-strong); background: rgba(139,111,208,0.1); }
+  .report-body { font-size: 14.5px; line-height: 1.7; color: var(--text-dim); word-break: break-word; }
+  .report-body h2, .report-body-inner h2 { font-size: 15px; font-weight: 600; color: var(--text); margin: 18px 0 8px; letter-spacing: -0.005em; }
+  .report-body h2:first-child, .report-body h3:first-child, .report-body-inner :first-child { margin-top: 0; }
+  .report-body h3, .report-body-inner h3 {
+    font-size: 12px; font-weight: 600; color: var(--accent); margin: 20px 0 9px;
+    text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--mono);
+  }
+  .report-body p, .report-body-inner p { margin: 6px 0; }
+  .report-body ul, .report-body-inner ul { list-style: none; margin: 6px 0 10px; padding: 0; }
+  .report-body li, .report-body-inner li { position: relative; padding-left: 18px; margin: 4px 0; font-size: 14px; line-height: 1.65; color: var(--text-dim); }
+  .report-body li::before, .report-body-inner li::before { content: ""; position: absolute; left: 4px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: 0.7; }
+  .report-body strong, .report-body-inner strong { color: var(--text); font-weight: 600; }
+  .report-body code, .report-body-inner code {
+    font-family: var(--mono); font-size: 12.5px; color: var(--accent);
+    background: rgba(139,111,208,0.1); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+  }
+  .report-body-inner { font-size: 14px; }
+  .report-card.show .report-body { animation: wordIn 0.5s var(--ease) forwards; }
+  @keyframes wordIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* section-wise output: one sub-card per specialist (Health / Security / Cost) */
+  .sections { display: grid; gap: 14px; }
+  .section {
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 12px; padding: 16px 18px;
+    opacity: 0; transform: translateY(8px); animation: sectionIn 0.5s var(--ease) forwards;
+  }
+  .section.s-health   { border-left-color: var(--run); }
+  .section.s-security { border-left-color: var(--amber); }
+  .section.s-cost     { border-left-color: var(--accent); }
+  @keyframes sectionIn { to { opacity: 1; transform: none; } }
+  .section .s-head { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; }
+  .section .s-ico { width: 15px; height: 15px; flex: none; }
+  .section .s-title { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; font-family: var(--mono); }
+  .section.s-health   .s-title, .section.s-health   .s-ico { color: var(--run); }
+  .section.s-security .s-title, .section.s-security .s-ico { color: var(--amber); }
+  .section.s-cost     .s-title, .section.s-cost     .s-ico { color: var(--accent); }
+  .section .s-badge {
+    margin-left: auto; font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text);
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 999px; padding: 3px 11px;
+  }
+
+  .footnote { text-align: center; margin-top: 30px; color: var(--text-faint); font-size: 11.5px; font-family: var(--mono); }
+  .footnote b { color: var(--text-dim); font-weight: 500; }
+  .footnote a { color: var(--text-dim); font-weight: 500; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.25s var(--ease), color 0.25s var(--ease); }
+  .footnote a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .signature { text-align: center; margin-top: 12px; color: var(--text-faint); font-size: 12.5px; }
+  .signature .heart { color: #e0607e; }
+  .signature a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.25s var(--ease); }
+  .signature a:hover { border-bottom-color: var(--accent); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+    .pulse { display: none !important; }
+  }
+  @media (max-width: 860px) {
+    .app { padding: 28px 16px 56px; }
+    h1 { font-size: 27px; }
+    .sub { font-size: 14px; }
+    .hero-pills { gap: 6px; }
+    .pill { font-size: 10px; padding: 5px 10px; }
+    .agents-row { grid-template-columns: 1fr; gap: 16px; }
+    .supervisor-row { margin-bottom: 30px; }
+    .node.supervisor { width: 100%; }
+    #wires { display: none; }
+    .report-head { flex-wrap: wrap; gap: 8px; }
+    .report-head .traccia-link { margin-left: 0; }
+    .section .s-badge { font-size: 11px; }
+  }
+  @media (max-width: 420px) {
+    h1 { font-size: 23px; }
+    .btn .btn-inner { padding: 11px 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hero">
+    <div class="hero-emblem">
+      <div class="logo-dot"></div>
+    </div>
+    <h1>AWS Account Investigator</h1>
+    <p class="sub">A read-only multi-agent crew that inspects your account and reports back in seconds.</p>
+    <div class="hero-pills">
+      <span class="pill"><span class="pill-dot"></span> read-only</span>
+      <span class="pill">4 agents</span>
+      <span class="pill">Strands + Amazon Nova Pro</span>
+      <span class="pill">traced with Traccia</span>
+    </div>
+  </div>
+
+  <div class="console">
+    <div class="prompt" id="promptBar">
+      <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <textarea id="q" placeholder="Ask the crew to investigate your account…">What's running in my account, any security risks, and where is my month-to-date spend going?</textarea>
+    </div>
+
+    <div class="mode-toggle" role="group" aria-label="Run mode">
+      <span class="chip" id="chipLive"   role="button" aria-pressed="true"  tabindex="0">LIVE</span>
+      <span class="chip" id="chipReplay" role="button" aria-pressed="false" tabindex="0">REPLAY</span>
+    </div>
+
+    <button class="btn" id="run">
+      <span class="btn-inner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+        Investigate
+      </span>
+    </button>
+  </div>
+
+  <div class="heartbeat" id="heartbeat"><div class="bar"></div></div>
+
+  <div class="stage">
+    <svg id="wires" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="wireGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(139,111,208,0.0)"/>
+          <stop offset="50%" stop-color="rgba(139,111,208,0.55)"/>
+          <stop offset="100%" stop-color="rgba(139,111,208,0.0)"/>
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="supervisor-row">
+      <div class="node supervisor" id="node-supervisor" data-state="idle">
+        <div class="head">
+          <span class="lamp"></span>
+          <div>
+            <div class="title">AWS Account Investigator</div>
+            <div class="role">orchestrator · supervisor</div>
+          </div>
+          <span class="status">idle</span>
+        </div>
+        <div class="activity"><span class="spin"></span><span class="act-text">waiting for prompt</span></div>
+        <div class="svc"><span class="chip-svc">cost_analyst</span><span class="chip-svc">health_ops</span><span class="chip-svc">security_ops</span></div>
+      </div>
+    </div>
+
+    <div class="agents-row" id="agentsRow"></div>
+  </div>
+
+  <div class="report-card" id="reportCard">
+    <div class="report-head">
+      <span class="dot"></span>
+      <h2>Report</h2>
+      <a class="traccia-link" href="https://app.traccia.ai" target="_blank" rel="noopener">cost &amp; traces in Traccia →</a>
+    </div>
+    <div class="report-body" id="reportBody"></div>
+  </div>
+
+  <div class="footnote">read-only · observes and reports · never changes anything &nbsp;·&nbsp; in collaboration with <a href="https://traccia.ai" target="_blank" rel="noopener"><b>Traccia.ai</b></a></div>
+  <div class="signature">Made with <span class="heart">♥</span> by <a href="https://sarvarnadaf.com" target="_blank" rel="noopener">Sarvar</a></div>
+</div>
+
+<script>window.__REPLAY__ = {"agents": [{"key": "supervisor", "agent_id": "aws-investigator", "agent_name": "AWS Account Investigator", "input_tokens": 3007, "output_tokens": 1170, "total_tokens": 4177, "cost_usd": 0.0061496, "latency_ms": 9413, "cycles": 2, "stop_reason": "end_turn", "start": 1789716628447740580}, {"key": "health_ops", "agent_id": "health-ops", "agent_name": "Health & Ops", "input_tokens": 4160, "output_tokens": 700, "total_tokens": 4860, "cost_usd": 0.005568, "latency_ms": 5677, "cycles": 3, "stop_reason": "end_turn", "start": 1789716629867579564}, {"key": "security_ops", "agent_id": "security-auditor", "agent_name": "Security Auditor", "input_tokens": 2402, "output_tokens": 642, "total_tokens": 3044, "cost_usd": 0.003976, "latency_ms": 6017, "cycles": 2, "stop_reason": "end_turn", "start": 1789716629872558641}, {"key": "cost_analyst", "agent_id": "cost-analyst", "agent_name": "Cost Analyst", "input_tokens": 3517, "output_tokens": 481, "total_tokens": 3998, "cost_usd": 0.0043528, "latency_ms": 4062, "cycles": 2, "stop_reason": "end_turn", "start": 1789716629890151498}], "report": "Here's the synthesized report based on the gathered information:\n\n### Health Report\n**EC2 Instances:**\n- Instance ID: i-0abc123def4567890\n- Instance Type: t3.2xlarge\n- CPU Utilization (last hour): 85%\n\n**Lambda Functions:**\n- cost-agent-fn (runtime: python3.12)\n- image-fn-a (runtime: python3.13)\n- Demo (runtime: python3.10)\n- hello-fn (runtime: python3.11)\n- ocr-fn (runtime: python3.14)\n- demo-api-fn (runtime: python3.14)\n- s3-processor-fn (runtime: python3.11)\n- image-fn-b (runtime: python3.13)\n\n**S3 Buckets:**\n- dev.example-app.com\n- content-articles\n- devops-team-a\n- devops-team-b\n- article-promotion\n- demo-gallery-site-111122223333\n- example-app.com\n- media-assets\n\n**EBS Volumes:**\n- Volume ID: vol-0aaaa1111bbbb2222\n  - Size: 150 GiB\n  - Type: gp2\n  - State: in-use\n- Volume ID: vol-0cccc3333dddd4444\n  - Size: 50 GiB\n  - Type: gp3\n  - State: in-use\n\n**Notable Health Findings:**\n- There are no unattached (available) EBS volumes in the us-east-1 region.\n\n### Security Report\n**Security Risks Summary:**\n\n1. **Security groups open to the whole internet:**\n   - **Finding:** Security groups `sg-0aaaa1111bbbb2222`, `sg-0eeee5555`, and `sg-0cccc3333dddd4444` have inbound rules open to `0.0.0.0/0` on ports `22` and `3389`.\n   - **Risk:** These open ports allow unrestricted access from any IP address, potentially enabling unauthorized access and attacks.\n\n2. **MFA gaps:**\n   - **Finding:** The root account has MFA enabled. However, IAM users `dev-user`, `automation-demo`, `ci-deploy`, `app-service`, `batch-runner`, `analyst-a`, `analyst-b`, `platform-admin`, `svc-runner`, and `iac-runner` lack MFA.\n   - **Risk:** IAM users without MFA are more susceptible to unauthorized access, increasing the risk of account compromise.\n\n3. **S3 buckets not fully protected by a public access block:**\n   - **Finding:** All S3 buckets are fully protected by a public access block.\n   - **Risk:** None. All S3 buckets are properly configured to prevent public access.\n\n4. **GuardDuty threat detection:**\n   - **Finding:** GuardDuty threat detection is not enabled.\n   - **Risk:** Without GuardDuty, the account lacks a managed threat-detection service, leaving it vulnerable to undetected threats.\n\n### Cost Report\n**Cost Forecast:**\n- **Actual Month-to-Date Total:** $1.73\n- **Forecasted Month-End Total:** $50.79\n- **Top 5 Services by Actual Month-to-Date Spend:**\n  1. **Claude Sonnet 4.5 (Amazon Bedrock Edition):** $1.46\n  2. **Tax:** $0.27\n  3. **EC2 - Other:** $0.09\n  4. **Claude Haiku 4.5 (Amazon Bedrock Edition):** $0.00\n  5. **Amazon Elastic Compute Cloud - Compute:** $0.00\n\n**Last Month's Cost:**\n- **Last Full Month's Total:** $0.20\n- **Month-over-Month Change:** \n  - **Direction:** Increase\n  - **Rough Percentage:** Approximately 765% increase (from $0.20 to $1.73)\n\n**Daily Cost Trend:**\n- **Most Expensive Day:** September 14, 2026 with a cost of $1.3271\n- **Average Daily Cost:** $0.0963\n- **Peak Day:** September 14, 2026 stands out significantly against the average daily spend, indicating a possible spike.\n"};</script>
+<script>
+  // each specialist + the plausible activity lines it shows while running
+  const SPECIALISTS = [
+    { key: "cost_analyst", title: "Cost Analyst",     role: "finops",   act: "Reading Cost Explorer: MTD + forecast, last-month change, daily spike…", svc: ["Cost Explorer","Forecast","MoM","Daily Trend"] },
+    { key: "health_ops",   title: "Health & Ops",     role: "sre",      act: "Inventorying EC2, EBS, Lambda, S3; reading CloudWatch CPU…", svc: ["EC2","EBS","Lambda","S3","CloudWatch"] },
+    { key: "security_ops", title: "Security Auditor", role: "security", act: "Auditing security groups, IAM MFA, S3 exposure, GuardDuty…", svc: ["Security Groups","IAM","S3","GuardDuty"] },
+  ];
+  const ACT = Object.fromEntries(SPECIALISTS.map(s => [s.key, s.act]));
+
+  const agentsRow = document.getElementById("agentsRow");
+  const nodes = { supervisor: document.getElementById("node-supervisor") };
+  for (const s of SPECIALISTS) {
+    const el = document.createElement("div");
+    el.className = "node"; el.id = "node-" + s.key; el.dataset.state = "idle";
+    el.innerHTML = `
+      <div class="head">
+        <span class="lamp"></span>
+        <div><div class="title">${s.title}</div><div class="role">${s.role}</div></div>
+        <span class="status">idle</span>
+      </div>
+      <div class="activity"><span class="spin"></span><span class="act-text">waiting for prompt</span></div>
+      <div class="svc">${s.svc.map(x => `<span class="chip-svc">${x}</span>`).join("")}</div>`;
+    agentsRow.appendChild(el);
+    nodes[s.key] = el;
+  }
+
+  // wires
+  const svg = document.getElementById("wires");
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const wires = {};
+  function layoutWires() {
+    const stage = document.querySelector(".stage").getBoundingClientRect();
+    svg.setAttribute("viewBox", `0 0 ${stage.width} ${stage.height}`);
+    const sup = nodes.supervisor.getBoundingClientRect();
+    const sx = sup.left + sup.width/2 - stage.left;
+    const sy = sup.bottom - stage.top;
+    [...svg.querySelectorAll("path")].forEach(p => p.remove());
+    for (const s of SPECIALISTS) {
+      const r = nodes[s.key].getBoundingClientRect();
+      const ex = r.left + r.width/2 - stage.left;
+      const ey = r.top - stage.top;
+      const midY = (sy + ey) / 2;
+      const d = `M ${sx} ${sy} C ${sx} ${midY}, ${ex} ${midY}, ${ex} ${ey}`;
+      const base = document.createElementNS(SVGNS, "path");
+      base.setAttribute("d", d); base.setAttribute("fill", "none");
+      base.setAttribute("stroke", "rgba(255,255,255,0.07)"); base.setAttribute("stroke-width", "1.5");
+      svg.appendChild(base);
+      const glow = document.createElementNS(SVGNS, "path");
+      glow.setAttribute("d", d); glow.setAttribute("fill", "none");
+      glow.setAttribute("stroke", "url(#wireGrad)"); glow.setAttribute("stroke-width", "2.5");
+      glow.setAttribute("class", "pulse"); glow.style.opacity = "0";
+      svg.appendChild(glow);
+      const L = glow.getTotalLength();
+      // A short visible segment travelling along a long gap = a "comet" pulse. Use a
+      // fixed-length visible dash (not a fraction of L) so it reads the SAME on the
+      // straight middle wire (Health) as on the curved outer wires (Cost / Security).
+      const seg = Math.min(70, L * 0.5);
+      glow.style.strokeDasharray = `${seg} ${L}`;
+      glow.dataset.len = L;
+      glow.dataset.seg = seg;
+      wires[s.key] = glow;
+    }
+  }
+  let pulseRAF = null;
+  const active = new Set();
+  // per-wire phase offset so the three pulses don't move in lockstep (more alive, and
+  // guarantees the middle straight wire is visibly animating even if one phase aligns).
+  const PHASE = { cost_analyst: 0, health_ops: 0.33, security_ops: 0.66 };
+  let idleShimmer = true;   // faint always-on shimmer before/after a run (#1)
+  function animatePulses(ts) {
+    for (const key of Object.keys(wires)) {
+      const g = wires[key];
+      if (active.has(key)) {
+        const L = parseFloat(g.dataset.len);
+        const seg = parseFloat(g.dataset.seg);
+        // travel from supervisor (start) to the agent (end): offset goes 0 -> -(L+seg)
+        const t = ((ts / 1100) + (PHASE[key] || 0)) % 1;
+        g.style.strokeDashoffset = `${-t * (L + seg)}`;
+        g.style.opacity = "1";
+      } else if (idleShimmer) {
+        // gentle breathing glow so the graph looks alive (not broken) at idle
+        const t = (ts / 2600) + (PHASE[key] || 0);
+        g.style.strokeDashoffset = `${-((t % 1)) * (parseFloat(g.dataset.len) + parseFloat(g.dataset.seg))}`;
+        g.style.opacity = `${0.12 + 0.10 * (0.5 + 0.5 * Math.sin(t * Math.PI * 2))}`;
+      } else { g.style.opacity = "0"; }
+    }
+    pulseRAF = requestAnimationFrame(animatePulses);
+  }
+
+  function setState(key, state, statusText, actText) {
+    const n = nodes[key]; if (!n) return;
+    n.dataset.state = state;
+    n.querySelector(".status").textContent = statusText;
+    if (state === "idle") n.classList.remove("active"); else n.classList.add("active");
+    if (actText !== undefined) n.querySelector(".act-text").textContent = actText;
+  }
+
+  // Minimal, safe Markdown -> HTML for the report. Handles: ### / ## headings,
+  // **bold**, `code`, and "- " bullet lists. Escapes HTML first (no injection), so the
+  // crew's Markdown renders as clean headings/bold/bullets instead of literal #### / **.
+  function mdToHtml(md) {
+    const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const inline = (s) => esc(s)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/`(.+?)`/g, "<code>$1</code>");
+    const lines = md.replace(/\r/g, "").split("\n");
+    let html = "", inList = false;
+    const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
+    for (let raw of lines) {
+      const line = raw.trimEnd();
+      let m;
+      if ((m = line.match(/^\s*#{3,}\s+(.*)$/))) { closeList(); html += `<h3>${inline(m[1])}</h3>`; }
+      else if ((m = line.match(/^\s*#{1,2}\s+(.*)$/))) { closeList(); html += `<h2>${inline(m[1])}</h2>`; }
+      else if ((m = line.match(/^\s*[-*]\s+(.*)$/))) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${inline(m[1])}</li>`; }
+      else if (line.trim() === "") { closeList(); }
+      else { closeList(); html += `<p>${inline(line)}</p>`; }
+    }
+    closeList();
+    return html;
+  }
+
+  // Split the report into its ### sections and render each as its own card
+  // (Health / Security / Cost), so the output mirrors the three specialists above.
+  const ICONS = {
+    health:   '<svg class="s-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+    security: '<svg class="s-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    cost:     '<svg class="s-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  };
+  function classify(title) {
+    const t = title.toLowerCase();
+    if (t.includes("security")) return "security";
+    if (t.includes("cost") || t.includes("spend")) return "cost";
+    return "health";
+  }
+  // pull a short summary badge for each section from its own text
+  function badge(kind, bodyText) {
+    if (kind === "cost") {
+      const m = bodyText.match(/Total[^$]*\$?\s*([\d.,]+)/i);
+      return m ? "$" + m[1] : "";
+    }
+    if (kind === "security") {
+      const n = (bodyText.match(/security group/gi) || []).length;
+      return n ? n + (n === 1 ? " risk" : " risks") : "";
+    }
+    return ""; // health: no single number worth badging
+  }
+
+  function revealReport(text) {
+    const card = document.getElementById("reportCard");
+    const body = document.getElementById("reportBody");
+    card.classList.add("show");
+
+    // Split on "### <heading>". Anything before the first ### is an intro line (dropped
+    // from the cards; the report head already says "Report").
+    const parts = text.split(/^\s*#{1,6}\s+/m).map(s => s.trim()).filter(Boolean);
+    const sections = [];
+    // If the model didn't use ### headings, fall back to one plain card.
+    if (parts.length <= 1) {
+      sections.push({ kind: "health", title: "Report", html: mdToHtml(text), badge: "" });
+    } else {
+      // First split element is the intro (has no heading). Re-parse with heading capture.
+      const re = /^\s*#{1,6}\s+(.+)$/gm;
+      let m, idxs = [];
+      while ((m = re.exec(text)) !== null) idxs.push({ title: m[1].trim(), start: m.index, hEnd: re.lastIndex });
+      idxs.forEach((h, i) => {
+        const end = i + 1 < idxs.length ? idxs[i+1].start : text.length;
+        const bodyText = text.slice(h.hEnd, end).trim();
+        const kind = classify(h.title);
+        sections.push({ kind, title: h.title, html: mdToHtml(bodyText), badge: badge(kind, bodyText) });
+      });
+    }
+
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Order the cards Cost / Health / Security? Keep the crew's own order (Health,
+    // Security, Cost as produced) so it matches what the agents reported.
+    body.innerHTML = '<div class="sections">' + sections.map((s, i) => `
+      <div class="section s-${s.kind}" style="animation-delay:${reduce?0:i*140}ms">
+        <div class="s-head">
+          ${ICONS[s.kind]}
+          <span class="s-title">${s.title}</span>
+          ${s.badge ? `<span class="s-badge">${s.badge}</span>` : ""}
+        </div>
+        <div class="report-body-inner">${s.html}</div>
+      </div>`).join("") + "</div>";
+  }
+
+  const chipLive = document.getElementById("chipLive");
+  const chipReplay = document.getElementById("chipReplay");
+  let mode = "live";
+  chipLive.onclick   = () => { mode="live";   chipLive.setAttribute("aria-pressed","true");  chipReplay.setAttribute("aria-pressed","false"); };
+  chipReplay.onclick = () => { mode="replay"; chipReplay.setAttribute("aria-pressed","true"); chipLive.setAttribute("aria-pressed","false"); };
+
+  function resetUI() {
+    active.clear(); idleShimmer = true; ranAgents.clear();
+    for (const key of Object.keys(nodes)) setState(key, "idle", "idle", "waiting for prompt");
+    document.getElementById("reportCard").classList.remove("show");
+    document.getElementById("reportBody").innerHTML = "";
+    const hb = document.getElementById("heartbeat");
+    hb.classList.remove("on","done");
+  }
+
+  const runBtn = document.getElementById("run");
+  const ranAgents = new Set();   // which specialists actually fired (for the empty-state)
+  let es = null;
+
+  // On run, bring the whole agent graph (supervisor + 3 specialists) into view.
+  // If the stage is taller than the viewport, align its top just under the top edge;
+  // otherwise center it. Skip on small screens where cards stack (already in flow).
+  function scrollToAgents() {
+    const stage = document.querySelector(".stage");
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
+    const top = window.scrollY + rect.top - 24;            // 24px breathing room above supervisor
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+
+  function investigate() {
+    if (es) es.close();
+    resetUI(); layoutWires(); runBtn.disabled = true;
+    idleShimmer = false;                                   // stop idle shimmer during run
+    scrollToAgents();                                      // bring all 4 agents into view for the run
+    const hb = document.getElementById("heartbeat"); hb.classList.add("on");   // #2 heartbeat
+    const q = encodeURIComponent(document.getElementById("q").value.trim());
+    es = makeReplaySource();  // static build: client-side replay, no backend
+
+    es.addEventListener("run_started", () => setState("supervisor","running","orchestrating","Delegating to specialists…"));
+    es.addEventListener("agent_started", (e) => {
+      const d = JSON.parse(e.data);
+      setState(d.key, "running", "running", ACT[d.key] || "working…");
+      active.add(d.key); ranAgents.add(d.key);
+    });
+    es.addEventListener("agent_finished", (e) => {
+      const d = JSON.parse(e.data);
+      active.delete(d.key);
+      const amber = d.stop_reason && /content_filter|max_tokens|filtered/i.test(d.stop_reason);
+      setState(d.key, amber ? "amber" : "done", amber ? "flagged" : "done",
+               amber ? "flagged by content filter" : "done");
+    });
+    es.addEventListener("supervisor_finished", () => {
+      // #4 fan-in: light the wires back from the agents that ran, into the supervisor,
+      // and show a distinct "synthesizing" state before it settles.
+      setState("supervisor","synth","synthesizing","Combining findings into one report…");
+      active.clear();
+      for (const k of ranAgents) active.add(k);            // re-light only the wires that ran
+      setTimeout(() => {
+        active.clear();
+        setState("supervisor","done","done","Report ready");
+      }, 1400);
+    });
+    es.addEventListener("final_report", (e) => {
+      const rep = JSON.parse(e.data).report || "";
+      // #6 empty state: if the crew returned essentially nothing, say so cleanly.
+      if (rep.replace(/\s/g,"").length < 12) {
+        revealReport("### No findings\nThe crew ran but returned no findings for this query.");
+      } else {
+        revealReport(rep);
+      }
+    });
+    es.addEventListener("run_error", (e) => {
+      setState("supervisor","amber","error","run error");
+      revealReport("### Run error\n" + (JSON.parse(e.data).error || "unknown error"));
+    });
+    es.addEventListener("run_done", () => {
+      runBtn.disabled = false;
+      hb.classList.add("done");                            // #2 heartbeat completes
+      setTimeout(() => { idleShimmer = true; }, 1600);     // resume gentle idle shimmer
+      if (es) es.close();
+    });
+    es.onerror = () => { runBtn.disabled = false; idleShimmer = true; };
+  }
+
+  runBtn.onclick = investigate;
+  // attractive search bar: focus glow + Enter-to-run (Shift+Enter = newline)
+  const promptBar = document.getElementById("promptBar");
+  const qEl = document.getElementById("q");
+  qEl.addEventListener("focus", () => promptBar.classList.add("focused"));
+  qEl.addEventListener("blur",  () => promptBar.classList.remove("focused"));
+  qEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!runBtn.disabled) investigate(); }
+  });
+  window.addEventListener("resize", layoutWires);
+  layoutWires();
+  if (!pulseRAF) pulseRAF = requestAnimationFrame(animatePulses);
+
+  // ---- static GitHub Pages build: client-side REPLAY (no backend) ----
+  // Reproduces ui/app.py:_replay_events: same event names, same ordering, same pacing.
+  function makeReplaySource() {
+    const listeners = {};
+    const es = {
+      addEventListener: (name, fn) => { (listeners[name] ||= []).push(fn); },
+      close: () => { es._closed = true; },
+      _closed: false,
+    };
+    const fire = (name, dataObj) => {
+      if (es._closed) return;
+      (listeners[name] || []).forEach(fn => fn({ data: JSON.stringify(dataObj) }));
+    };
+    const wait = (ms) => new Promise(r => setTimeout(r, ms));
+    const D = window.__REPLAY__ || { agents: [], report: "" };
+    const supervisor = D.agents.find(a => a.key === "supervisor");
+    const specialists = D.agents.filter(a => a.key !== "supervisor");
+
+    (async () => {
+      fire("run_started", {});
+      await wait(600);
+      for (const sp of specialists) { fire("agent_started", { key: sp.key }); await wait(250); }
+      for (const sp of specialists) {
+        const dwell = Math.min(Math.max((sp.latency_ms || 1500) / 1000, 1.0), 3.5);
+        await wait(dwell * 1000);
+        fire("agent_finished", { key: sp.key, stop_reason: sp.stop_reason });
+      }
+      await wait(500);
+      if (supervisor) fire("supervisor_finished", {});
+      await wait(400);
+      fire("final_report", { report: D.report });
+      fire("run_done", {});
+    })();
+
+    return es;
+  }
+
+  // ---- Pages LIVE switch ----------------------------------------------------
+  // LIVE needs the local FastAPI backend (Bedrock + boto3), which a static host
+  // cannot run. For now we keep BOTH toggle chips VISIBLE but lock the page to
+  // REPLAY to avoid any cost. When you are ready to test LIVE, set this to true
+  // (and serve the UI from the FastAPI backend, not Pages).
+  const LIVE_ENABLED = false;
+
+  (function lockToReplay() {
+    if (LIVE_ENABLED) return;                 // LIVE on: leave both chips working
+    mode = "replay";                          // LIVE off: force replay, keep chips shown
+    const live = document.getElementById("chipLive");
+    const replay = document.getElementById("chipReplay");
+    if (replay) replay.setAttribute("aria-pressed", "true");
+    if (live) {
+      live.setAttribute("aria-pressed", "false");
+      live.setAttribute("aria-disabled", "true");
+      live.title = "LIVE is disabled here (needs the local backend). Replay only.";
+      live.style.opacity = "0.45";
+      live.style.cursor = "not-allowed";
+      // Swallow clicks so LIVE cannot be selected while disabled.
+      live.onclick = (e) => { e.stopImmediatePropagation(); e.preventDefault(); };
+    }
+  })();
+</script>
+
+</body>
+</html>
