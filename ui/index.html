@@ -651,6 +651,13 @@
   // e.g. the REPLAY path). Reset at run_started.
   let _cmAcc = { calls: 0, tokens: 0, cost: 0 };
 
+  // Fixed crew-meter totals to display. The meter ticks up across the run and lands
+  // EXACTLY on these numbers. Set to null to fall back to the live/replay measured
+  // totals. (Kept fixed per request so the demo always shows the same headline figure.)
+  const CREW_METER_FIXED = { calls: 3, tokens: 12219, cost: 0.013032 };
+  let _cmTicks = 0;              // how many meter updates have happened this run
+  const _CM_TOTAL_TICKS = 4;    // 3 specialists + supervisor
+
   // Update the live crew meter from an agent_finished / supervisor_finished event.
   // `_cmAcc` is the single running source of truth for the meter. When the crew sends
   // cumulative running_* fields (live, from crew.py) we SYNC _cmAcc to those absolute
@@ -669,14 +676,26 @@
       _cmAcc.tokens += (d.total_tokens || 0);
       _cmAcc.cost   += (d.cost_usd || 0);
     }
+
+    let calls = _cmAcc.calls, tokens = _cmAcc.tokens, cost = _cmAcc.cost;
+    // If fixed totals are set, tick up toward them and land exactly on the final tick.
+    if (CREW_METER_FIXED) {
+      _cmTicks += 1;
+      const isLast = _cmTicks >= _CM_TOTAL_TICKS;
+      const frac = Math.min(_cmTicks / _CM_TOTAL_TICKS, 1);
+      calls  = isLast ? CREW_METER_FIXED.calls  : Math.max(1, Math.round(CREW_METER_FIXED.calls  * frac));
+      tokens = isLast ? CREW_METER_FIXED.tokens : Math.round(CREW_METER_FIXED.tokens * frac);
+      cost   = isLast ? CREW_METER_FIXED.cost   : +(CREW_METER_FIXED.cost * frac).toFixed(6);
+    }
+
     const set = (id, val) => {
       const el = document.getElementById(id);
       el.textContent = val;
       el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); // retrigger
     };
-    set("cmCalls", String(_cmAcc.calls));
-    set("cmTokens", Number(_cmAcc.tokens).toLocaleString());
-    set("cmCost", "$" + Number(_cmAcc.cost).toFixed(6));
+    set("cmCalls", String(calls));
+    set("cmTokens", Number(tokens).toLocaleString());
+    set("cmCost", "$" + Number(cost).toFixed(6));
   }
 
   // On run, bring the whole agent graph (supervisor + 3 specialists) into view.
@@ -705,6 +724,7 @@
       const cm = document.getElementById("crewMeter");
       cm.classList.add("on");
       _cmAcc = { calls: 0, tokens: 0, cost: 0 };
+      _cmTicks = 0;
       document.getElementById("cmCalls").textContent = "0";
       document.getElementById("cmTokens").textContent = "0";
       document.getElementById("cmCost").textContent = "$0.000000";
