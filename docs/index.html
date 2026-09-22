@@ -652,12 +652,31 @@
   // e.g. the REPLAY path). Reset at run_started.
   let _cmAcc = { calls: 0, tokens: 0, cost: 0 };
 
-  // Fixed crew-meter totals to display. The meter ticks up across the run and lands
-  // EXACTLY on these numbers. Set to null to fall back to the live/replay measured
-  // totals. (Kept fixed per request so the demo always shows the same headline figure.)
+  // Fixed crew-meter totals. When set, the meter stays at 0 during the run and snaps
+  // straight to these EXACT numbers once all agents finish (no intermediate tick-up).
+  // Set to null to fall back to the live/replay measured, per-agent-accumulating totals.
   const CREW_METER_FIXED = { calls: 3, tokens: 12219, cost: 0.013032 };
-  let _cmTicks = 0;              // how many meter updates have happened this run
-  const _CM_TOTAL_TICKS = 4;    // 3 specialists + supervisor
+
+  function _cmSet(calls, tokens, cost) {
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      el.textContent = val;
+      el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); // retrigger
+    };
+    set("cmCalls", String(calls));
+    set("cmTokens", Number(tokens).toLocaleString());
+    set("cmCost", "$" + Number(cost).toFixed(6));
+  }
+
+  // Snap the crew meter to its final totals. With CREW_METER_FIXED set, shows those
+  // exact numbers; otherwise shows the measured crew total accumulated in _cmAcc.
+  function finalizeCrewMeter() {
+    if (CREW_METER_FIXED) {
+      _cmSet(CREW_METER_FIXED.calls, CREW_METER_FIXED.tokens, CREW_METER_FIXED.cost);
+    } else {
+      _cmSet(_cmAcc.calls, _cmAcc.tokens, _cmAcc.cost);
+    }
+  }
 
   // Update the live crew meter from an agent_finished / supervisor_finished event.
   // `_cmAcc` is the single running source of truth for the meter. When the crew sends
@@ -665,6 +684,9 @@
   // values. When an event carries only its own per-agent numbers (replay, and the
   // supervisor_finished event which is never in the running_* total) we ADD them on.
   // Either way the meter reflects the WHOLE crew and never double-counts.
+  //
+  // With CREW_METER_FIXED set we do NOT tick the display per agent (it stays at 0);
+  // finalizeCrewMeter() snaps it to the fixed numbers once execution completes.
   function updateCrewMeter(d) {
     if (d.running_total_tokens != null) {
       // Absolute cumulative crew total so far (specialists). Sync, don't add.
@@ -677,26 +699,8 @@
       _cmAcc.tokens += (d.total_tokens || 0);
       _cmAcc.cost   += (d.cost_usd || 0);
     }
-
-    let calls = _cmAcc.calls, tokens = _cmAcc.tokens, cost = _cmAcc.cost;
-    // If fixed totals are set, tick up toward them and land exactly on the final tick.
-    if (CREW_METER_FIXED) {
-      _cmTicks += 1;
-      const isLast = _cmTicks >= _CM_TOTAL_TICKS;
-      const frac = Math.min(_cmTicks / _CM_TOTAL_TICKS, 1);
-      calls  = isLast ? CREW_METER_FIXED.calls  : Math.max(1, Math.round(CREW_METER_FIXED.calls  * frac));
-      tokens = isLast ? CREW_METER_FIXED.tokens : Math.round(CREW_METER_FIXED.tokens * frac);
-      cost   = isLast ? CREW_METER_FIXED.cost   : +(CREW_METER_FIXED.cost * frac).toFixed(6);
-    }
-
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      el.textContent = val;
-      el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); // retrigger
-    };
-    set("cmCalls", String(calls));
-    set("cmTokens", Number(tokens).toLocaleString());
-    set("cmCost", "$" + Number(cost).toFixed(6));
+    if (CREW_METER_FIXED) return;   // stay at 0 during the run; snap at the end
+    _cmSet(_cmAcc.calls, _cmAcc.tokens, _cmAcc.cost);
   }
 
   // On run, bring the whole agent graph (supervisor + 3 specialists) into view.
@@ -725,7 +729,6 @@
       const cm = document.getElementById("crewMeter");
       cm.classList.add("on");
       _cmAcc = { calls: 0, tokens: 0, cost: 0 };
-      _cmTicks = 0;
       document.getElementById("cmCalls").textContent = "0";
       document.getElementById("cmTokens").textContent = "0";
       document.getElementById("cmCost").textContent = "$0.000000";
@@ -757,6 +760,8 @@
       // live sends cumulative running_* and this is the last event; replay sends the
       // supervisor's own tokens, which the fallback adds to the specialist sum).
       if (d.total_tokens != null || d.running_total_tokens != null) updateCrewMeter(d);
+      // All agents have now finished executing -> reveal the final crew totals.
+      finalizeCrewMeter();
       setTimeout(() => {
         active.clear();
         setState("supervisor","done","done","Report ready");
