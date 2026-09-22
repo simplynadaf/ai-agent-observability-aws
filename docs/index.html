@@ -227,6 +227,19 @@
   .node[data-state="running"] .chip-svc { color: var(--run); border-color: rgba(87,217,138,0.3); background: rgba(87,217,138,0.06); }
   .node[data-state="done"] .chip-svc { color: var(--text-dim); border-color: var(--border); }
 
+  /* per-agent metrics row (LLM calls / tokens / cost) - shown once the agent finishes (replay data) */
+  .metrics {
+    display: flex; gap: 16px; margin-top: 13px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+    opacity: 0; transform: translateY(3px);
+    transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+  }
+  .node.has-metrics .metrics { opacity: 1; transform: none; }
+  .metrics .m { display: flex; flex-direction: column; gap: 2px; }
+  .metrics .m .m-val { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--text); }
+  .metrics .m .m-lbl { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); }
+  .metrics .m.cost .m-val { color: var(--accent); }
+
   /* #1 idle life: cards breathe faintly + wires shimmer even before a run */
   .node[data-state="idle"] .lamp { animation: idleBreath 3.4s ease-in-out infinite; }
   @keyframes idleBreath { 0%,100% { opacity: 0.5; } 50% { opacity: 0.9; } }
@@ -260,6 +273,19 @@
     transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
   }
   .report-head .traccia-link:hover { border-color: var(--border-strong); background: rgba(139,111,208,0.1); }
+
+  /* run summary strip (totals across all agents) - shown once the run completes */
+  .run-summary {
+    display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 18px; padding: 14px 18px;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px;
+    opacity: 0; transform: translateY(4px);
+    transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+  }
+  .run-summary.show { opacity: 1; transform: none; }
+  .run-summary .rs { display: flex; flex-direction: column; gap: 3px; }
+  .run-summary .rs-val { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--text); }
+  .run-summary .rs-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); }
+  .run-summary .rs.cost .rs-val { color: var(--accent); }
   .report-body { font-size: 14.5px; line-height: 1.7; color: var(--text-dim); word-break: break-word; }
   .report-body h2, .report-body-inner h2 { font-size: 15px; font-weight: 600; color: var(--text); margin: 18px 0 8px; letter-spacing: -0.005em; }
   .report-body h2:first-child, .report-body h3:first-child, .report-body-inner :first-child { margin-top: 0; }
@@ -395,6 +421,11 @@
         </div>
         <div class="activity"><span class="spin"></span><span class="act-text">waiting for prompt</span></div>
         <div class="svc"><span class="chip-svc">cost_analyst</span><span class="chip-svc">health_ops</span><span class="chip-svc">security_ops</span></div>
+        <div class="metrics">
+          <div class="m"><span class="m-val" data-m="calls">-</span><span class="m-lbl">LLM calls</span></div>
+          <div class="m"><span class="m-val" data-m="tokens">-</span><span class="m-lbl">Tokens</span></div>
+          <div class="m cost"><span class="m-val" data-m="cost">-</span><span class="m-lbl">Cost</span></div>
+        </div>
       </div>
     </div>
 
@@ -406,6 +437,11 @@
       <span class="dot"></span>
       <h2>Report</h2>
       <a class="traccia-link" href="https://app.traccia.ai" target="_blank" rel="noopener">cost &amp; traces in Traccia →</a>
+    </div>
+    <div class="run-summary" id="runSummary">
+      <div class="rs"><span class="rs-val" data-rs="calls">-</span><span class="rs-lbl">LLM calls</span></div>
+      <div class="rs"><span class="rs-val" data-rs="tokens">-</span><span class="rs-lbl">Total tokens</span></div>
+      <div class="rs cost"><span class="rs-val" data-rs="cost">-</span><span class="rs-lbl">Total cost</span></div>
     </div>
     <div class="report-body" id="reportBody"></div>
   </div>
@@ -436,7 +472,12 @@
         <span class="status">idle</span>
       </div>
       <div class="activity"><span class="spin"></span><span class="act-text">waiting for prompt</span></div>
-      <div class="svc">${s.svc.map(x => `<span class="chip-svc">${x}</span>`).join("")}</div>`;
+      <div class="svc">${s.svc.map(x => `<span class="chip-svc">${x}</span>`).join("")}</div>
+      <div class="metrics">
+        <div class="m"><span class="m-val" data-m="calls">-</span><span class="m-lbl">LLM calls</span></div>
+        <div class="m"><span class="m-val" data-m="tokens">-</span><span class="m-lbl">Tokens</span></div>
+        <div class="m cost"><span class="m-val" data-m="cost">-</span><span class="m-lbl">Cost</span></div>
+      </div>`;
     agentsRow.appendChild(el);
     nodes[s.key] = el;
   }
@@ -510,6 +551,43 @@
     n.querySelector(".status").textContent = statusText;
     if (state === "idle") n.classList.remove("active"); else n.classList.add("active");
     if (actText !== undefined) n.querySelector(".act-text").textContent = actText;
+  }
+
+  // Show per-agent LLM calls / tokens / cost from the replay data once an agent finishes.
+  function setMetrics(key, d) {
+    const n = nodes[key]; if (!n || d.total_tokens == null) return;
+    const set = (m, v) => { const el = n.querySelector(`.m-val[data-m="${m}"]`); if (el) el.textContent = v; };
+    set("calls", d.llm_calls != null ? d.llm_calls : 1);
+    set("tokens", Number(d.total_tokens).toLocaleString());
+    set("cost", "$" + Number(d.cost_usd).toFixed(4));
+    n.classList.add("has-metrics");
+  }
+  function resetMetrics() {
+    for (const n of Object.values(nodes)) {
+      if (!n) continue;
+      n.classList.remove("has-metrics");
+      n.querySelectorAll(".m-val").forEach(el => el.textContent = "-");
+    }
+    const rs = document.getElementById("runSummary");
+    if (rs) { rs.classList.remove("show"); rs.querySelectorAll(".rs-val").forEach(el => el.textContent = "-"); }
+  }
+
+  // Totals across every agent that ran (LLM calls / tokens / cost), shown by the report.
+  function setRunSummary() {
+    const rs = document.getElementById("runSummary");
+    if (!rs) return;
+    const agents = (window.__REPLAY__ && window.__REPLAY__.agents) || [];
+    let calls = 0, tokens = 0, cost = 0;
+    for (const a of agents) {
+      calls += (a.llm_calls != null ? a.llm_calls : 1);
+      tokens += Number(a.total_tokens || 0);
+      cost += Number(a.cost_usd || 0);
+    }
+    const set = (m, v) => { const el = rs.querySelector(`.rs-val[data-rs="${m}"]`); if (el) el.textContent = v; };
+    set("calls", calls);
+    set("tokens", tokens.toLocaleString());
+    set("cost", "$" + cost.toFixed(4));
+    rs.classList.add("show");
   }
 
   // Minimal, safe Markdown -> HTML for the report. Handles: ### / ## headings,
@@ -609,6 +687,7 @@
 
   function resetUI() {
     active.clear(); idleShimmer = true; ranAgents.clear();
+    resetMetrics();
     for (const key of Object.keys(nodes)) setState(key, "idle", "idle", "waiting for prompt");
     document.getElementById("reportCard").classList.remove("show");
     document.getElementById("reportBody").innerHTML = "";
@@ -652,13 +731,16 @@
       const amber = d.stop_reason && /content_filter|max_tokens|filtered/i.test(d.stop_reason);
       setState(d.key, amber ? "amber" : "done", amber ? "flagged" : "done",
                amber ? "flagged by content filter" : "done");
+      setMetrics(d.key, d);
     });
-    es.addEventListener("supervisor_finished", () => {
+    es.addEventListener("supervisor_finished", (e) => {
+      const d = JSON.parse(e.data);
       // #4 fan-in: light the wires back from the agents that ran, into the supervisor,
       // and show a distinct "synthesizing" state before it settles.
       setState("supervisor","synth","synthesizing","Combining findings into one report…");
       active.clear();
       for (const k of ranAgents) active.add(k);            // re-light only the wires that ran
+      setMetrics("supervisor", d);
       setTimeout(() => {
         active.clear();
         setState("supervisor","done","done","Report ready");
@@ -666,6 +748,7 @@
     });
     es.addEventListener("final_report", (e) => {
       const rep = JSON.parse(e.data).report || "";
+      setRunSummary();
       // #6 empty state: if the crew returned essentially nothing, say so cleanly.
       if (rep.replace(/\s/g,"").length < 12) {
         revealReport("### No findings\nThe crew ran but returned no findings for this query.");
@@ -724,10 +807,15 @@
       for (const sp of specialists) {
         const dwell = Math.min(Math.max((sp.latency_ms || 1500) / 1000, 1.0), 3.5);
         await wait(dwell * 1000);
-        fire("agent_finished", { key: sp.key, stop_reason: sp.stop_reason });
+        fire("agent_finished", {
+          key: sp.key, stop_reason: sp.stop_reason,
+          llm_calls: 1, total_tokens: sp.total_tokens, cost_usd: sp.cost_usd,
+        });
       }
       await wait(500);
-      if (supervisor) fire("supervisor_finished", {});
+      if (supervisor) fire("supervisor_finished", {
+        llm_calls: 1, total_tokens: supervisor.total_tokens, cost_usd: supervisor.cost_usd,
+      });
       await wait(400);
       fire("final_report", { report: D.report });
       fire("run_done", {});

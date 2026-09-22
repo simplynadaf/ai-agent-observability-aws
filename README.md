@@ -261,7 +261,15 @@ cd ai-agent-observability-aws
 
 python3 -m venv .venv && . .venv/bin/activate    # create + activate a clean venv
 pip install -r requirements.txt                  # pinned, tested versions
+
+cp .env.example .env                             # your local config (ignored by git)
+bash scripts/install-hooks.sh                    # install the secret-guard pre-commit hook
 ```
+
+> 🔒 **Secrets stay local.** `.env` is git-ignored; only `.env.example` (a placeholder) is
+> tracked. Put your real `TRACCIA_API_KEY` in `.env`. The installed pre-commit hook
+> (`scripts/pre-commit-secrets.sh`) blocks any commit that contains an AWS key, a private
+> key, a real account id, or a non-placeholder API key.
 
 ### Step 2: Set up AWS access (one time)
 
@@ -293,7 +301,7 @@ python -m src.view_trace # renders the nested tree + per-agent cost table
 python -m src.waste_demo # clean baseline + 3 waste scenarios + delta verdict
 ```
 
-> 💡 No Traccia account needed. With no `TRACCIA_API_KEY`, traces write to a local file. Set the key and the **same spans** push to [app.traccia.ai](https://app.traccia.ai).
+> 💡 No Traccia account needed. With no `TRACCIA_API_KEY`, traces write to a local file. Set the key in `.env` (copied from `.env.example`) and the **same spans** push to [app.traccia.ai](https://app.traccia.ai).
 
 ---
 

@@ -13,10 +13,12 @@ traces_*.jsonl
 # Local logs
 *.log
 
-# Secrets - the tracked .env holds ONLY a placeholder (your_traccia_api_key_here).
-# Put your REAL key in .env.local (ignored below) or paste it into .env locally
-# without committing. Never commit a real key.
+# Secrets - never commit a real key.
+# Copy .env.example to .env and put your REAL key there. .env is ignored below,
+# so it can never be committed by accident. .env.example (placeholder only) IS tracked.
+.env
 .env.local
+.env.*.local
 
 
 # Internal working files - never publish
