@@ -7,14 +7,14 @@ Here's the synthesized report based on the gathered information:
 - CPU Utilization (last hour): 85%
 
 **Lambda Functions:**
-- cost-agent-fn (runtime: python3.12)
-- image-fn-a (runtime: python3.13)
-- Demo (runtime: python3.10)
-- hello-fn (runtime: python3.11)
-- ocr-fn (runtime: python3.14)
-- demo-api-fn (runtime: python3.14)
-- s3-processor-fn (runtime: python3.11)
-- image-fn-b (runtime: python3.13)
+- demo-fn-1 (runtime: python3.12)
+- demo-fn-4 (runtime: python3.13)
+- demo-fn-8 (runtime: python3.10)
+- demo-fn-7 (runtime: python3.11)
+- demo-fn-6 (runtime: python3.14)
+- demo-fn-3 (runtime: python3.14)
+- demo-fn-2 (runtime: python3.11)
+- demo-fn-5 (runtime: python3.13)
 
 **S3 Buckets:**
 - dev.example-app.com
