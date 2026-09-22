@@ -74,6 +74,11 @@ engine = r"""
     const supervisor = D.agents.find(a => a.key === "supervisor");
     const specialists = D.agents.filter(a => a.key !== "supervisor");
 
+    // Defer the driver to the next tick so the caller can register its
+    // addEventListener handlers FIRST. Without this, run_started fires
+    // synchronously before any listener exists and the reveal is lost
+    // (the crew meter would stay hidden even though its numbers update).
+    setTimeout(() => {
     (async () => {
       fire("run_started", {});
       await wait(600);
@@ -81,14 +86,20 @@ engine = r"""
       for (const sp of specialists) {
         const dwell = Math.min(Math.max((sp.latency_ms || 1500) / 1000, 1.0), 3.5);
         await wait(dwell * 1000);
-        fire("agent_finished", { key: sp.key, stop_reason: sp.stop_reason });
+        fire("agent_finished", {
+          key: sp.key, stop_reason: sp.stop_reason,
+          total_tokens: sp.total_tokens, cost_usd: sp.cost_usd,
+        });
       }
       await wait(500);
-      if (supervisor) fire("supervisor_finished", {});
+      if (supervisor) fire("supervisor_finished", {
+        total_tokens: supervisor.total_tokens, cost_usd: supervisor.cost_usd,
+      });
       await wait(400);
       fire("final_report", { report: D.report });
       fire("run_done", {});
     })();
+    }, 0);
 
     return es;
   }

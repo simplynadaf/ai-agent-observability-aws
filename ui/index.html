@@ -651,27 +651,32 @@
   // e.g. the REPLAY path). Reset at run_started.
   let _cmAcc = { calls: 0, tokens: 0, cost: 0 };
 
-  // Update the live crew meter from an agent_finished event. Prefers the crew's
-  // cumulative running_* fields (real, measured, sent by crew.py); falls back to summing
-  // per-agent total_tokens/cost_usd client-side (replay). Numbers are always real.
+  // Update the live crew meter from an agent_finished / supervisor_finished event.
+  // `_cmAcc` is the single running source of truth for the meter. When the crew sends
+  // cumulative running_* fields (live, from crew.py) we SYNC _cmAcc to those absolute
+  // values. When an event carries only its own per-agent numbers (replay, and the
+  // supervisor_finished event which is never in the running_* total) we ADD them on.
+  // Either way the meter reflects the WHOLE crew and never double-counts.
   function updateCrewMeter(d) {
-    let calls, tokens, cost;
     if (d.running_total_tokens != null) {
-      calls = d.running_llm_calls; tokens = d.running_total_tokens; cost = d.running_cost_usd;
+      // Absolute cumulative crew total so far (specialists). Sync, don't add.
+      _cmAcc.calls  = d.running_llm_calls;
+      _cmAcc.tokens = d.running_total_tokens;
+      _cmAcc.cost   = d.running_cost_usd;
     } else {
-      _cmAcc.calls += 1;
+      // This agent's own real numbers (replay specialists, or the supervisor). Add on.
+      _cmAcc.calls  += 1;
       _cmAcc.tokens += (d.total_tokens || 0);
-      _cmAcc.cost += (d.cost_usd || 0);
-      calls = _cmAcc.calls; tokens = _cmAcc.tokens; cost = _cmAcc.cost;
+      _cmAcc.cost   += (d.cost_usd || 0);
     }
     const set = (id, val) => {
       const el = document.getElementById(id);
       el.textContent = val;
       el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); // retrigger
     };
-    set("cmCalls", String(calls));
-    set("cmTokens", Number(tokens).toLocaleString());
-    set("cmCost", "$" + Number(cost).toFixed(6));
+    set("cmCalls", String(_cmAcc.calls));
+    set("cmTokens", Number(_cmAcc.tokens).toLocaleString());
+    set("cmCost", "$" + Number(_cmAcc.cost).toFixed(6));
   }
 
   // On run, bring the whole agent graph (supervisor + 3 specialists) into view.
@@ -718,12 +723,19 @@
       // Tick the live crew meter up with the cumulative REAL totals so far.
       updateCrewMeter(d);
     });
-    es.addEventListener("supervisor_finished", () => {
+    es.addEventListener("supervisor_finished", (e) => {
+      const d = JSON.parse(e.data || "{}");
       // #4 fan-in: light the wires back from the agents that ran, into the supervisor,
       // and show a distinct "synthesizing" state before it settles.
       setState("supervisor","synth","synthesizing","Combining findings into one report…");
       active.clear();
       for (const k of ranAgents) active.add(k);            // re-light only the wires that ran
+      // Fold the supervisor's own LLM usage into the crew meter so the total reflects
+      // the WHOLE crew (specialists + supervisor), not just the specialists. Uses the
+      // same running_* vs client-fallback logic as updateCrewMeter (no double-count:
+      // live sends cumulative running_* and this is the last event; replay sends the
+      // supervisor's own tokens, which the fallback adds to the specialist sum).
+      if (d.total_tokens != null || d.running_total_tokens != null) updateCrewMeter(d);
       setTimeout(() => {
         active.clear();
         setState("supervisor","done","done","Report ready");
