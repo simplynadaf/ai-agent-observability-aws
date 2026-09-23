@@ -95,9 +95,11 @@ def main() -> None:
         if "llm.cost.usd" in a:
             c = a["llm.cost.usd"]
             total += c
+            pin = a.get("llm.usage.prompt_tokens")
+            pout = a.get("llm.usage.completion_tokens")
+            toks = f"{pin} in / {pout} out" if pin is not None or pout is not None else "no token usage"
             print(f"  {s['name']:20s} {GREEN}${c:.6f}{RESET}  "
-                  f"{DIM}({a['llm.usage.prompt_tokens']} in / "
-                  f"{a['llm.usage.completion_tokens']} out){RESET}")
+                  f"{DIM}({toks}){RESET}")
     print(f"  {BOLD}{'CREW TOTAL':20s} {GREEN}${total:.6f}{RESET}")
 
     # Per-tool table

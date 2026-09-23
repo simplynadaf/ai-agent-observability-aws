@@ -256,25 +256,63 @@ Four things. The first three are required; the fourth is optional.
 
 ## 🚀 Getting Started
 
-### Step 1: Clone and install
+### Quickstart (clone → optional key → run)
 
 ```bash
 git clone https://github.com/simplynadaf/ai-agent-observability-aws.git
 cd ai-agent-observability-aws
 
-python3 -m venv .venv && . .venv/bin/activate    # create + activate a clean venv
-pip install -r requirements.txt                  # pinned, tested versions
+make setup            # venv + pinned deps + secret-guard hook + copies .env.example -> .env
 
-cp .env.example .env                             # your local config (ignored by git)
-bash scripts/install-hooks.sh                    # install the secret-guard pre-commit hook
+# (optional) to push traces to the hosted dashboard, put your key in .env — see below.
+# The code AUTO-LOADS .env, so there is NO `source .env` step.
+
+make run              # run the crew against real AWS -> traces.jsonl (needs AWS creds)
+make verify           # nested trace tree + per-agent cost table
+make waste            # clean baseline + 3 silent-waste scenarios + delta verdict
+make compare          # side-by-side "same answer, different bill"
 ```
 
-> 🔒 **Secrets stay local.** `.env` is git-ignored; only `.env.example` (a placeholder) is
-> tracked. Put your real `TRACCIA_API_KEY` in `.env`. The installed pre-commit hook
-> (`scripts/pre-commit-secrets.sh`) blocks any commit that contains an AWS key, a private
-> key, a real account id, or a non-placeholder API key.
+Run `make help` for every target. Prefer manual steps? See the collapsible below.
 
-### Step 2: Set up AWS access (one time)
+### 🔑 Where to put your Traccia key (crystal clear)
+
+The key is **OPTIONAL** — the whole demo runs at **$0 local** without it (traces write to
+`traces.jsonl`). To also stream to the hosted dashboard:
+
+1. Get a key: **app.traccia.ai → Settings → API Keys**.
+2. Open the file **`.env`** in the repo root (created for you by `make setup`; it is
+   git-ignored, so your key is never committed).
+3. Uncomment the line and paste your key:
+   ```dotenv
+   # .env   (repo root)
+   TRACCIA_API_KEY=your_traccia_api_key_here
+   ```
+4. That's it. The code auto-loads `.env` on import (`src/crew.py`) — **no `source .env`**.
+   With the key set, `make run` prints `[traccia] platform export: ON` and the same spans
+   (agents, traces, per-agent cost/tokens) appear on your dashboard automatically.
+
+> Observability only — no `TRACCIA_ENDPOINT` needed. (That is a Part-2 governance thing.)
+
+<details>
+<summary>Manual steps (if you prefer not to use make)</summary>
+
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env                 # then paste your key (optional); .env is git-ignored
+bash scripts/install-hooks.sh        # secret-guard pre-commit hook
+python -m src.crew                   # crew -> traces.jsonl
+python -m src.view_trace             # nested tree + per-agent cost
+python -m src.waste_demo             # the silent-waste demo
+```
+</details>
+
+> 🔒 **Secrets stay local.** `.env` is git-ignored; only `.env.example` (a placeholder) is
+> tracked. The pre-commit hook (`scripts/pre-commit-secrets.sh`) blocks any commit that
+> contains an AWS key, a private key, a real account id, or a non-placeholder API key.
+
+### Set up AWS access (one time)
 
 ```bash
 # create the least-privilege policy (run with your own admin credentials)
@@ -287,24 +325,6 @@ aws iam create-policy \
 ```
 
 > 💡 Prefer AWS managed policies? Attach **`SecurityAudit`** + **`ViewOnlyAccess`** for the reads, then add the `bedrock:InvokeModel` statement on top (the managed pair does not include it).
-
-### Step 3: Run the crew against real AWS
-
-Run everything from the repository root (the crew is a `src/` package, so it is invoked
-with `python -m`, and `agent_config.json` / `traces.jsonl` resolve at the root):
-
-```bash
-python -m src.crew       # runs the crew, writes traces.jsonl  (local, $0 to Traccia)
-python -m src.view_trace # renders the nested tree + per-agent cost table
-```
-
-### Step 4: Watch the silent waste
-
-```bash
-python -m src.waste_demo # clean baseline + 3 waste scenarios + delta verdict
-```
-
-> 💡 No Traccia account needed. With no `TRACCIA_API_KEY`, traces write to a local file. Set the key in `.env` (copied from `.env.example`) and the **same spans** push to [app.traccia.ai](https://app.traccia.ai).
 
 ---
 
