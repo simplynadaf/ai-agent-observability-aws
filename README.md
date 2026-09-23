@@ -1,5 +1,7 @@
 <div align="center">
 
+[![AI Agent Observability on AWS - Every agent leaves a trace](docs/cover.png)](https://youtu.be/UwDRlcFRhSA)
+
 # 🔍 AI Agent Observability on AWS: Catch the Silent Waste (2026)
 
 ### Build a read-only multi-agent crew on Amazon Bedrock, put real per-agent cost on every trace, then reproduce three "silent waste" patterns that return a perfect answer, show `200 OK`, and still bill you 1.5x.
