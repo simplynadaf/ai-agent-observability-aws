@@ -11,6 +11,7 @@
 [![OpenTelemetry](https://img.shields.io/badge/Built%20on-OpenTelemetry-425CC7?style=for-the-badge&logo=opentelemetry&logoColor=white)](https://opentelemetry.io)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-A855F7?style=for-the-badge)](LICENSE)
 
+[![Watch the Video](https://img.shields.io/badge/▶%20Watch%20the%20Walkthrough-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/UwDRlcFRhSA)
 [![Live Demo](https://img.shields.io/badge/🕹️%20Live%20Demo-Try%20it%20in%20your%20browser-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://simplynadaf.github.io/ai-agent-observability-aws/)
 
 [![Stars](https://img.shields.io/github/stars/simplynadaf/ai-agent-observability-aws?style=social)](https://github.com/simplynadaf/ai-agent-observability-aws/stargazers)
@@ -545,9 +546,11 @@ Yes, by IAM policy, not by hope. Every tool is a `Describe` / `Get` / `List`. At
 
 ## 🎬 Video Tutorial & Article
 
-📺 **Video walkthrough:** _coming soon_
+📺 **Video walkthrough:** [Watch on YouTube](https://youtu.be/UwDRlcFRhSA)
 📝 **Full write-up:** _coming soon_
 🕹️ **Live replay (browser, no backend):** https://simplynadaf.github.io/ai-agent-observability-aws/
+
+[![AI Agent Observability on AWS - video walkthrough](https://img.youtube.com/vi/UwDRlcFRhSA/maxresdefault.jpg)](https://youtu.be/UwDRlcFRhSA)
 
 This is **Episode 1** (Observability) of a two-part series with [Traccia](https://traccia.ai). Next up: **Governance**, runtime policy enforcement, guardrails, and EU AI Act evidence.
 
