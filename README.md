@@ -14,6 +14,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-A855F7?style=for-the-badge)](LICENSE)
 
 [![Watch the Video](https://img.shields.io/badge/▶%20Watch%20the%20Walkthrough-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/UwDRlcFRhSA)
+[![Read the Article](https://img.shields.io/badge/📝%20Read%20the%20Article-Dev.to-0A0A0A?style=for-the-badge&logo=devdotto&logoColor=white)](https://dev.to/sarvar_04/per-agent-cost-tracking-for-multi-agent-ai-on-aws-10eg)
 [![Live Demo](https://img.shields.io/badge/🕹️%20Live%20Demo-Try%20it%20in%20your%20browser-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://simplynadaf.github.io/ai-agent-observability-aws/)
 
 [![Stars](https://img.shields.io/github/stars/simplynadaf/ai-agent-observability-aws?style=social)](https://github.com/simplynadaf/ai-agent-observability-aws/stargazers)
@@ -569,7 +570,7 @@ Yes, by IAM policy, not by hope. Every tool is a `Describe` / `Get` / `List`. At
 ## 🎬 Video Tutorial & Article
 
 📺 **Video walkthrough:** [Watch on YouTube](https://youtu.be/UwDRlcFRhSA)
-📝 **Full write-up:** _coming soon_
+📝 **Full write-up:** [Per-Agent Cost Tracking for Multi-Agent AI on AWS (Dev.to)](https://dev.to/sarvar_04/per-agent-cost-tracking-for-multi-agent-ai-on-aws-10eg)
 🕹️ **Live replay (browser, no backend):** https://simplynadaf.github.io/ai-agent-observability-aws/
 
 [![AI Agent Observability on AWS - video walkthrough](https://img.youtube.com/vi/UwDRlcFRhSA/maxresdefault.jpg)](https://youtu.be/UwDRlcFRhSA)
